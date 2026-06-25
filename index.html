@@ -479,6 +479,7 @@ th.f3{min-width:160px;width:160px}
         <div class="sec-hdr">
           <div class="sec-title">Registros</div>
           <div class="search-wrap"><i class="fas fa-search"></i><input id="gsearch" type="text" placeholder="Buscar en todos los campos..." oninput="doSearch()" /></div>
+          <button class="btn" id="btn-refresh" onclick="fetchAllRecs()" title="Actualizar desde servidor" style="background:var(--card-solid);border:1px solid var(--border2);color:var(--text2)"><i class="fas fa-sync-alt"></i></button>
           <button class="btn btn-primary" id="btn-new-dash" onclick="openNewRec()"><i class="fas fa-plus"></i> Nuevo</button>
         </div>
         <div class="table-wrap">
@@ -778,11 +779,7 @@ const TOGGLE_KEYS = ['Resultado_Accion','SATISFACCION_O_NO_SATISFACCION_D6','Sat
 // ═══════════════════════════════════════════════
 // SAMPLE DATA
 // ═══════════════════════════════════════════════
-const SAMPLES = [
-  {ID_Registro:'8D-2024-001',Folio:'001',Fraccionamiento:'Almendros',Fecha_Revision:'2024-03-15',Superintendente:'Reynaldo Zavala',Residente:'Ana López',Facilitador_BPO:'Rosalba Pecina',Equipo_Trabajo:'Equipo Norte',Descripcion_Problema:'Fisuras en muros de block en zona habitacional sector A',Accion_Contencion:'Delimitación de área y suspensión de trabajos afectados',Causa_Raiz:'Mezcla con proporción inadecuada de cemento-arena',Ponderacion_Causa:'85%',ID_Accion:'AC-001',Accion_Correctiva:'Capacitación al personal en proporciones de mezcla y supervisión directa',Responsable_Accion:'Ana López',Fecha_Programada:'2024-03-25',Fecha_Realizacion:'2024-03-23',Comentarios_Accion:'Se realizó taller práctico con todo el personal de obra',Resultado_Accion:'Satisfactorio',Verificacion_D6:'Inspección visual de nuevos muros sin fisuras',FECHA_DE_REVISION_D6:'2024-04-05',SATISFACCION_O_NO_SATISFACCION_D6:'Satisfactorio',REVISION_1_D6:'Muros en buen estado, mezcla correcta verificada',ResidenteD6:'Ana López',Superintendente_D6:'Reynaldo Zavala',Facilitador_PMO_D6:'Rosalba Pecina',Jefe_de_Calidad_D6:'María Torres',Estatus_Folio_D6:'Cerrado',Fecha_Cierre_D6:'2024-04-10',Evidencia_Link_D6:'https://drive.google.com',D7_Documentos_estandarizados:'Procedimiento de mezcla actualizado',Manual_de_Procesos:'MP-CONST-045 Rev.2',Plano:'PL-2024-A12',Modificacion_de_presupuesto:'Sin cambio',Responsable_D7:'Rosalba Pecina',Fecha_D7:'2024-04-15',D8_Evaluacion_de_efectividad:'Sin recurrencia de fisuras en toda la obra a 30 días',Fecha_de_revision_D8:'2024-05-15',Satisfaccion_O_no_SatisfaccionD8:'Satisfactorio',ResidenteD8:'Ana López',SuperintendenteD8:'Reynaldo Zavala',Facilitador_PMO_D8:'Rosalba Pecina',Jefe_de_Calidad_D8:'María Torres',Estatus_Folio_D8:'Cerrado',Fecha_Cierre_D8:'2024-05-20',Evidencia_Link_D8:'https://drive.google.com'},
-  {ID_Registro:'8D-2024-002',Folio:'002',Fraccionamiento:'Porto Bello',Fecha_Revision:'2024-04-10',Superintendente:'Jorge Licea',Residente:'Roberto Flores',Facilitador_BPO:'Erik Calderon',Equipo_Trabajo:'Equipo Sur',Descripcion_Problema:'Filtraciones en losas de techo en 3 viviendas bloque B',Accion_Contencion:'Colocación de membranas impermeabilizantes temporales',Causa_Raiz:'Pendiente insuficiente en losa y juntas sin sello adecuado',Ponderacion_Causa:'90%',ID_Accion:'AC-002',Accion_Correctiva:'Corrección de pendiente y aplicación de impermeabilizante elastomérico',Responsable_Accion:'Roberto Flores',Fecha_Programada:'2024-04-20',Fecha_Realizacion:'',Comentarios_Accion:'En espera de materiales',Resultado_Accion:'',Verificacion_D6:'',FECHA_DE_REVISION_D6:'',SATISFACCION_O_NO_SATISFACCION_D6:'',REVISION_1_D6:'',ResidenteD6:'',Superintendente_D6:'',Facilitador_PMO_D6:'',Jefe_de_Calidad_D6:'',Estatus_Folio_D6:'Abierto',Fecha_Cierre_D6:'',Evidencia_Link_D6:'',D7_Documentos_estandarizados:'',Manual_de_Procesos:'',Plano:'',Modificacion_de_presupuesto:'',Responsable_D7:'',Fecha_D7:'',D8_Evaluacion_de_efectividad:'',Fecha_de_revision_D8:'',Satisfaccion_O_no_SatisfaccionD8:'',ResidenteD8:'',SuperintendenteD8:'',Facilitador_PMO_D8:'',Jefe_de_Calidad_D8:'',Estatus_Folio_D8:'Abierto',Fecha_Cierre_D8:'',Evidencia_Link_D8:''},
-  {ID_Registro:'8D-2024-003',Folio:'003',Fraccionamiento:'Haciendas',Fecha_Revision:'2024-05-02',Superintendente:'Hugo Martinez',Residente:'Sandra Vega',Facilitador_BPO:'Julio Esquivel',Equipo_Trabajo:'Equipo Centro',Descripcion_Problema:'Hundimientos en banqueta peatonal tramo km 2+500 a km 2+750',Accion_Contencion:'Señalización y cierre de paso peatonal en zona afectada',Causa_Raiz:'Sub-base mal compactada por lluvia durante proceso constructivo',Ponderacion_Causa:'75%',ID_Accion:'AC-003',Accion_Correctiva:'Retiro de banqueta, recompactación de sub-base y reposición',Responsable_Accion:'Sandra Vega',Fecha_Programada:'2024-05-20',Fecha_Realizacion:'2024-05-18',Comentarios_Accion:'Trabajo completado antes de fecha programada',Resultado_Accion:'Satisfactorio',Verificacion_D6:'Prueba de compactación con compactómetro',FECHA_DE_REVISION_D6:'2024-06-01',SATISFACCION_O_NO_SATISFACCION_D6:'No satisfactorio',REVISION_1_D6:'Se detectaron puntos adicionales con compactación deficiente',ResidenteD6:'Sandra Vega',Superintendente_D6:'Hugo Martinez',Facilitador_PMO_D6:'Julio Esquivel',Jefe_de_Calidad_D6:'Patricia Mora',Estatus_Folio_D6:'En proceso',Fecha_Cierre_D6:'',Evidencia_Link_D6:'https://drive.google.com',D7_Documentos_estandarizados:'Procedimiento de compactación en condiciones de lluvia',Manual_de_Procesos:'MP-VIAL-012 Rev.1',Plano:'PL-2024-V33',Modificacion_de_presupuesto:'Incremento $45,000',Responsable_D7:'Julio Esquivel',Fecha_D7:'2024-06-10',D8_Evaluacion_de_efectividad:'',Fecha_de_revision_D8:'',Satisfaccion_O_no_SatisfaccionD8:'',ResidenteD8:'',SuperintendenteD8:'',Facilitador_PMO_D8:'',Jefe_de_Calidad_D8:'',Estatus_Folio_D8:'En proceso',Fecha_Cierre_D8:'',Evidencia_Link_D8:''},
-];
+const SAMPLES = [];
 
 // ═══════════════════════════════════════════════
 // RECORDS CACHE
@@ -838,8 +835,10 @@ function apiPost(payload) {
 // LOAD RECORDS
 // ═══════════════════════════════════════════════
 function fetchAllRecs() {
-  DB = loadCache(); // muestra caché local de inmediato
+  DB = loadCache();
   if (!CONFIGURED) return;
+  const btn = document.getElementById('btn-refresh');
+  if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>'; }
   setSyncState('syncing');
   fetch(APPS_SCRIPT_URL)
     .then(r => r.json())
@@ -849,10 +848,17 @@ function fetchAllRecs() {
         refreshDash();
         setSyncState('ok');
       } else {
+        toast('No se pudieron cargar los registros del servidor.', 'er');
         setSyncState('err');
       }
     })
-    .catch(() => setSyncState('err'));
+    .catch(() => {
+      toast('Error al conectar con el servidor. Verifica tu conexión.', 'er');
+      setSyncState('err');
+    })
+    .finally(() => {
+      if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-sync-alt"></i>'; }
+    });
 }
 
 // ═══════════════════════════════════════════════
@@ -958,6 +964,7 @@ function nav(page) {
   if (ni) ni.classList.add('active');
   if (page==='users') renderUsers();
   if (page==='search') { buildSearchHeaders(); doFilter(); }
+  if (page==='dashboard') fetchAllRecs();
   closeSidebar();
 }
 
