@@ -607,6 +607,10 @@ th.f3{min-width:160px;width:160px}
           <div class="fgroup"><label>Miembro 4</label><input id="et-m4" placeholder="Nombre completo" oninput="updateEquipo()" /></div>
           <div class="fgroup"><label>Miembro 5</label><input id="et-m5" placeholder="Nombre completo" oninput="updateEquipo()" /></div>
           <div class="fgroup"><label>Miembro 6</label><input id="et-m6" placeholder="Nombre completo" oninput="updateEquipo()" /></div>
+          <div class="fgroup"><label>Miembro 7</label><input id="et-m7" placeholder="Nombre completo" oninput="updateEquipo()" /></div>
+          <div class="fgroup"><label>Miembro 8</label><input id="et-m8" placeholder="Nombre completo" oninput="updateEquipo()" /></div>
+          <div class="fgroup"><label>Miembro 9</label><input id="et-m9" placeholder="Nombre completo" oninput="updateEquipo()" /></div>
+          <div class="fgroup"><label>Miembro 10</label><input id="et-m10" placeholder="Nombre completo" oninput="updateEquipo()" /></div>
           <input type="hidden" id="f-Equipo_Trabajo" />
           <div class="fw" style="font-size:11px;font-weight:700;text-transform:uppercase;color:#28534E;border-bottom:1px solid #98C894;padding-bottom:4px;margin:16px 0 4px 0;letter-spacing:.6px">Tabla de Votación — D4 Causas Raíz</div>
           <p class="fw" style="font-size:11px;color:var(--muted);margin:0 0 8px 0">Cada miembro puntúa cada idea. La de mayor puntaje se copia automáticamente a Causa Raíz.</p>
@@ -616,12 +620,16 @@ th.f3{min-width:160px;width:160px}
                 <tr style="background:var(--primary);color:#fff">
                   <th style="padding:6px 8px;text-align:center;width:28px">#</th>
                   <th style="padding:6px 8px;text-align:left;min-width:150px">Idea / Causa Raíz</th>
-                  <th id="vh-1" style="padding:6px 6px;min-width:60px;text-align:center">M1</th>
-                  <th id="vh-2" style="padding:6px 6px;min-width:60px;text-align:center">M2</th>
-                  <th id="vh-3" style="padding:6px 6px;min-width:60px;text-align:center">M3</th>
-                  <th id="vh-4" style="padding:6px 6px;min-width:60px;text-align:center">M4</th>
-                  <th id="vh-5" style="padding:6px 6px;min-width:60px;text-align:center">M5</th>
-                  <th id="vh-6" style="padding:6px 6px;min-width:60px;text-align:center">M6</th>
+                  <th id="vh-1" style="padding:6px 6px;min-width:54px;text-align:center">M1</th>
+                  <th id="vh-2" style="padding:6px 6px;min-width:54px;text-align:center">M2</th>
+                  <th id="vh-3" style="padding:6px 6px;min-width:54px;text-align:center">M3</th>
+                  <th id="vh-4" style="padding:6px 6px;min-width:54px;text-align:center">M4</th>
+                  <th id="vh-5" style="padding:6px 6px;min-width:54px;text-align:center">M5</th>
+                  <th id="vh-6" style="padding:6px 6px;min-width:54px;text-align:center">M6</th>
+                  <th id="vh-7" style="padding:6px 6px;min-width:54px;text-align:center">M7</th>
+                  <th id="vh-8" style="padding:6px 6px;min-width:54px;text-align:center">M8</th>
+                  <th id="vh-9" style="padding:6px 6px;min-width:54px;text-align:center">M9</th>
+                  <th id="vh-10" style="padding:6px 6px;min-width:54px;text-align:center">M10</th>
                   <th style="padding:6px 8px;min-width:48px;text-align:center">Total</th>
                 </tr>
               </thead>
@@ -1245,7 +1253,7 @@ function openNewRec() {
   document.getElementById('f-ID_Registro').value=`8D-${yr}-${num}`;
   document.getElementById('f-Folio').value=String(DB.length+1).padStart(3,'0');
   TOGGLE_KEYS.forEach(k=>setSatBtns(k,''));
-  for(let i=1;i<=6;i++){const el=document.getElementById('et-m'+i);if(el)el.value='';}
+  for(let i=1;i<=10;i++){const el=document.getElementById('et-m'+i);if(el)el.value='';}
   resetVotoTable(); updateEquipo();
   switchTab(0);
   openModal('rec-modal');
@@ -1259,7 +1267,7 @@ function openEditRec(id) {
   COLS.forEach(c=>{const el=document.getElementById('f-'+c.k);if(el)el.value=r[c.k]||'';});
   TOGGLE_KEYS.forEach(k=>setSatBtns(k,r[k]||''));
   const mems=(r.Equipo_Trabajo||'').split(',').map(s=>s.trim());
-  for(let i=1;i<=6;i++){const el=document.getElementById('et-m'+i);if(el)el.value=mems[i-1]||'';}
+  for(let i=1;i<=10;i++){const el=document.getElementById('et-m'+i);if(el)el.value=mems[i-1]||'';}
   resetVotoTable(); updateEquipo();
   switchTab(0);
   openModal('rec-modal');
@@ -1294,7 +1302,7 @@ function buildVotoTable() {
   let html = '';
   for (let r = 1; r <= 10; r++) {
     let scores = '';
-    for (let c = 1; c <= 6; c++) {
+    for (let c = 1; c <= 10; c++) {
       scores += `<td style="padding:2px 3px;text-align:center"><input id="voto-r${r}-c${c}" type="number" min="0" oninput="calcVotos()" style="${nStyle}" /></td>`;
     }
     html += `<tr id="voto-row-${r}" style="border-bottom:1px solid var(--border)">
@@ -1310,7 +1318,7 @@ function buildVotoTable() {
 function resetVotoTable() {
   for (let r = 1; r <= 10; r++) {
     const idea = document.getElementById('voto-idea-'+r); if (idea) idea.value = '';
-    for (let c = 1; c <= 6; c++) { const inp = document.getElementById('voto-r'+r+'-c'+c); if (inp) inp.value = ''; }
+    for (let c = 1; c <= 10; c++) { const inp = document.getElementById('voto-r'+r+'-c'+c); if (inp) inp.value = ''; }
     const tot = document.getElementById('voto-total-'+r);
     if (tot) { tot.textContent = '0'; tot.style.color = 'var(--muted)'; }
     const row = document.getElementById('voto-row-'+r); if (row) row.style.background = '';
@@ -1319,11 +1327,11 @@ function resetVotoTable() {
 
 function updateEquipo() {
   const names = [];
-  for (let i = 1; i <= 6; i++) {
+  for (let i = 1; i <= 10; i++) {
     const el = document.getElementById('et-m'+i);
     names.push(el ? el.value.trim() : '');
   }
-  for (let i = 1; i <= 6; i++) {
+  for (let i = 1; i <= 10; i++) {
     const th = document.getElementById('vh-'+i);
     if (th) th.textContent = names[i-1] || ('M'+i);
   }
@@ -1335,7 +1343,7 @@ function calcVotos() {
   let maxTotal = -1, bestIdea = '';
   for (let r = 1; r <= 10; r++) {
     let total = 0;
-    for (let c = 1; c <= 6; c++) {
+    for (let c = 1; c <= 10; c++) {
       const inp = document.getElementById('voto-r'+r+'-c'+c);
       total += inp ? Math.max(0, parseInt(inp.value) || 0) : 0;
     }
