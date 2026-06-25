@@ -973,8 +973,9 @@ function bootApp() {
   rb.textContent = CU.role;
   rb.className = 'rbadge r-' + CU.role.toLowerCase();
 
-  if (CU.role==='Admin') document.getElementById('nav-users').style.display='flex';
-  if (CU.role==='Viewer') {
+  const cuRole = (CU.role||'').toLowerCase();
+  if (cuRole==='admin') document.getElementById('nav-users').style.display='flex';
+  if (cuRole==='viewer') {
     document.getElementById('nav-new').style.display='none';
     document.getElementById('btn-new-dash').style.display='none';
   }
@@ -1111,7 +1112,7 @@ function renderTable() {
 // ROW BUILDER
 // ═══════════════════════════════════════════════
 function buildRow(r) {
-  const canEdit = CU.role==='Admin' || (CU.role==='Editor' && r.Fraccionamiento===CU.fracc);
+  const canEdit = (CU.role||'').toLowerCase()==='admin' || ((CU.role||'').toLowerCase()==='editor' && r.Fraccionamiento===CU.fracc);
 
   const cells = COLS.map((c,i) => {
     let cls='',style='';
@@ -1139,7 +1140,7 @@ function buildRow(r) {
 
   let acts = '';
   if (canEdit) acts+=`<button class="bicon bicon-edit" onclick="openEditRec('${esc(r.ID_Registro)}')" title="Editar"><i class="fas fa-edit"></i></button>`;
-  if (CU.role==='Admin') acts+=`<button class="bicon bicon-del" onclick="deleteRec('${esc(r.ID_Registro)}')" title="Eliminar"><i class="fas fa-trash"></i></button>`;
+  if ((CU.role||'').toLowerCase()==='admin') acts+=`<button class="bicon bicon-del" onclick="deleteRec('${esc(r.ID_Registro)}')" title="Eliminar"><i class="fas fa-trash"></i></button>`;
 
   return `<tr>${cells}<td><div style="display:flex;gap:5px">${acts}</div></td></tr>`;
 }
@@ -1234,7 +1235,7 @@ function switchTab(i) {
 // RECORD FORM
 // ═══════════════════════════════════════════════
 function openNewRec() {
-  if(CU.role==='Viewer')return;
+  if((CU.role||'').toLowerCase()==='viewer')return;
   EDIT_ID=null;
   document.getElementById('rec-modal-title').textContent='Nuevo Registro';
   const yr=new Date().getFullYear();
@@ -1423,7 +1424,7 @@ async function addUser() {
 }
 
 function renderUsers() {
-  const isAdmin = CU && CU.role === 'Admin';
+  const isAdmin = CU && (CU.role||'').toLowerCase() === 'admin';
   const addForm = isAdmin ? `
     <div style="padding:24px;background:rgba(255,255,255,0.85);border:1px solid var(--border);border-radius:var(--r);max-width:600px;box-shadow:0 2px 8px rgba(40,83,78,0.06);margin-bottom:18px">
       <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:16px">
