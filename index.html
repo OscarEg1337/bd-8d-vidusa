@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 <head>
 <meta charset="UTF-8">
@@ -1261,10 +1261,14 @@ function openNewRec() {
   EDIT_ID=null;
   document.getElementById('rec-modal-title').textContent='Nuevo Registro';
   const yr=new Date().getFullYear();
-  const num=String(DB.length+1).padStart(3,'0');
+  let maxId=0,maxFolio=0;
+  DB.forEach(r=>{
+    if(r.ID_Registro){const p=r.ID_Registro.split('-');const n=parseInt(p[p.length-1],10);if(!isNaN(n)&&n>maxId)maxId=n;}
+    const f=parseInt(r.Folio,10);if(!isNaN(f)&&f>maxFolio)maxFolio=f;
+  });
   COLS.forEach(c=>{const el=document.getElementById('f-'+c.k);if(el)el.value='';});
-  document.getElementById('f-ID_Registro').value=`8D-${yr}-${num}`;
-  document.getElementById('f-Folio').value=String(DB.length+1).padStart(3,'0');
+  document.getElementById('f-ID_Registro').value=`8D-${yr}-${String(maxId+1).padStart(3,'0')}`;
+  document.getElementById('f-Folio').value=String(maxFolio+1).padStart(3,'0');
   TOGGLE_KEYS.forEach(k=>setSatBtns(k,''));
   for(let i=1;i<=10;i++){const el=document.getElementById('et-m'+i);if(el)el.value='';}
   resetVotoTable(); updateEquipo();
@@ -1552,3 +1556,4 @@ checkSess();
 </script>
 </body>
 </html>
+
