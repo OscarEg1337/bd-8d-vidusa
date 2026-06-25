@@ -1349,6 +1349,8 @@ function calcVotos() {
   }
   const causaEl = document.getElementById('f-Causa_Raiz');
   if (causaEl && bestIdea) causaEl.value = bestIdea;
+  const pondEl = document.getElementById('f-Ponderacion_Causa');
+  if (pondEl && maxTotal > 0) pondEl.value = maxTotal;
 }
 
 // ═══════════════════════════════════════════════
