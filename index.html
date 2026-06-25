@@ -838,7 +838,21 @@ function apiPost(payload) {
 // LOAD RECORDS
 // ═══════════════════════════════════════════════
 function fetchAllRecs() {
-  DB = loadCache();
+  DB = loadCache(); // muestra caché local de inmediato
+  if (!CONFIGURED) return;
+  setSyncState('syncing');
+  fetch(APPS_SCRIPT_URL)
+    .then(r => r.json())
+    .then(data => {
+      if (data.status === 'ok' && Array.isArray(data.data)) {
+        saveCache(data.data);
+        refreshDash();
+        setSyncState('ok');
+      } else {
+        setSyncState('err');
+      }
+    })
+    .catch(() => setSyncState('err'));
 }
 
 // ═══════════════════════════════════════════════
