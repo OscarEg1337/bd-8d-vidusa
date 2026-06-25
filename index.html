@@ -1392,15 +1392,66 @@ function deleteRec(id) {
 // ═══════════════════════════════════════════════
 // USERS
 // ═══════════════════════════════════════════════
+async function addUser() {
+  const username = (document.getElementById('nu-username').value || '').trim();
+  const password = (document.getElementById('nu-password').value || '').trim();
+  const nombre   = (document.getElementById('nu-nombre').value   || '').trim();
+  const rol      = (document.getElementById('nu-rol').value      || '').trim();
+  if (!username || !password || !nombre || !rol) { toast('Completa todos los campos', 'er'); return; }
+  const btn = document.getElementById('btn-add-user');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando…';
+  try {
+    const res  = await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ _method: 'ADD_USER', username, password, nombre, rol }),
+    });
+    const data = await res.json();
+    if (data.status === 'ok') {
+      toast('Usuario "' + username + '" creado correctamente');
+      ['nu-username','nu-password','nu-nombre','nu-rol'].forEach(id => { document.getElementById(id).value = ''; });
+    } else {
+      toast(data.message || 'Error al crear usuario', 'er');
+    }
+  } catch(e) {
+    toast('Error al conectar con el servidor', 'er');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fas fa-user-plus"></i> Guardar Usuario';
+  }
+}
+
 function renderUsers() {
-  document.getElementById('user-grid').innerHTML = `
+  const isAdmin = CU && CU.role === 'Admin';
+  const addForm = isAdmin ? `
+    <div style="padding:24px;background:rgba(255,255,255,0.85);border:1px solid var(--border);border-radius:var(--r);max-width:600px;box-shadow:0 2px 8px rgba(40,83,78,0.06);margin-bottom:18px">
+      <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:16px">
+        <i class="fas fa-user-plus" style="color:var(--primary);margin-right:8px"></i>Agregar Nuevo Usuario
+      </div>
+      <div class="fgrid">
+        <div class="fgroup"><label>Username</label><input id="nu-username" placeholder="usuario123" autocomplete="off" /></div>
+        <div class="fgroup"><label>Contraseña</label><input id="nu-password" type="password" placeholder="••••••••" autocomplete="new-password" /></div>
+        <div class="fgroup"><label>Nombre Completo</label><input id="nu-nombre" placeholder="Nombre Apellido" /></div>
+        <div class="fgroup"><label>Rol</label>
+          <select id="nu-rol">
+            <option value="">-- Seleccionar --</option>
+            <option>Admin</option>
+            <option>Editor</option>
+            <option>Viewer</option>
+          </select>
+        </div>
+      </div>
+      <button class="btn btn-primary" id="btn-add-user" onclick="addUser()" style="margin-top:4px">
+        <i class="fas fa-user-plus"></i> Guardar Usuario
+      </button>
+    </div>` : '';
+  document.getElementById('user-grid').innerHTML = addForm + `
     <div style="padding:24px;background:rgba(255,255,255,0.85);border:1px solid var(--border);border-radius:var(--r);color:var(--muted);line-height:1.8;max-width:600px;box-shadow:0 2px 8px rgba(40,83,78,0.06)">
       <div style="font-size:16px;font-weight:700;color:var(--text);margin-bottom:10px">
         <i class="fas fa-users" style="color:var(--primary);margin-right:8px"></i>Usuarios gestionados en Google Sheets
       </div>
-      <p>Para agregar, modificar o eliminar usuarios, edita la hoja <strong style="color:var(--text)">USUARIOS</strong> directamente en el Google Spreadsheet vinculado.</p>
-      <p style="margin-top:10px">Columnas requeridas:</p>
-      <code style="display:block;margin-top:4px;background:var(--card-solid);padding:10px 14px;border-radius:var(--r-sm);font-size:12px;color:var(--text);border:1px solid var(--border)">username &nbsp;·&nbsp; password &nbsp;·&nbsp; nombre &nbsp;·&nbsp; rol &nbsp;·&nbsp; fraccionamiento</code>
+      <p>Para modificar o eliminar usuarios, edita la hoja <strong style="color:var(--text)">USUARIOS</strong> directamente en el Google Spreadsheet vinculado.</p>
       <p style="margin-top:14px">Roles válidos: <span class="rbadge" style="background:rgba(40,83,78,0.12);color:var(--primary);border:1px solid var(--border2);font-size:11px">Admin</span> &nbsp;<span class="rbadge" style="background:var(--accent-dim);color:var(--ok-tx);border:1px solid rgba(1,200,76,0.25);font-size:11px">Editor</span> &nbsp;<span class="rbadge" style="background:rgba(106,136,120,0.1);color:var(--muted);border:1px solid var(--border);font-size:11px">Viewer</span></p>
     </div>
   `;
