@@ -462,7 +462,7 @@ th.f3{min-width:160px;width:160px}
       <div class="sitem" id="nav-new" onclick="openNewRec()"><i class="fas fa-plus-circle"></i> Nuevo Registro</div>
       <div class="sidebar-divider"></div>
       <div class="sitem" id="nav-search" onclick="nav('search')"><i class="fas fa-search"></i> Buscar / Filtrar</div>
-      <div class="sitem" id="nav-users" style="display:none" onclick="nav('users')"><i class="fas fa-users-cog"></i> Usuarios</div>
+      <div class="sitem" id="nav-users" onclick="nav('users')"><i class="fas fa-users-cog"></i> Usuarios</div>
       <div class="sitem" id="nav-export" onclick="nav('export')"><i class="fas fa-download"></i> Exportar</div>
     </aside>
 
@@ -974,7 +974,6 @@ function bootApp() {
   rb.className = 'rbadge r-' + CU.role.toLowerCase();
 
   const cuRole = (CU.role||'').toLowerCase();
-  if (cuRole==='admin') document.getElementById('nav-users').style.display='flex';
   if (cuRole==='viewer') {
     document.getElementById('nav-new').style.display='none';
     document.getElementById('btn-new-dash').style.display='none';
