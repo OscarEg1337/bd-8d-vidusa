@@ -200,6 +200,7 @@ a:hover{color:var(--accent)}
 .sitem.active{background:var(--sb-active-bg);color:#fff;border-left-color:var(--accent)}
 .sitem.active i{color:var(--accent)}
 .sitem i{width:16px;text-align:center;flex-shrink:0;transition:var(--t);color:var(--sb-text)}
+.admin-only{display:none !important}
 .sitem:hover i{color:var(--sb-text-hover)}
 
 /* ─── MAIN ─── */
@@ -462,7 +463,7 @@ th.f3{min-width:160px;width:160px}
       <div class="sitem" id="nav-new" onclick="openNewRec()"><i class="fas fa-plus-circle"></i> Nuevo Registro</div>
       <div class="sidebar-divider"></div>
       <div class="sitem" id="nav-search" onclick="nav('search')"><i class="fas fa-search"></i> Buscar / Filtrar</div>
-      <div class="sitem" id="nav-users" onclick="nav('users')"><i class="fas fa-users-cog"></i> Usuarios</div>
+      <div class="sitem admin-only" id="nav-users" onclick="nav('users')"><i class="fas fa-users-cog"></i> Usuarios</div>
       <div class="sitem" id="nav-export" onclick="nav('export')"><i class="fas fa-download"></i> Exportar</div>
     </aside>
 
@@ -974,6 +975,7 @@ function bootApp() {
   rb.className = 'rbadge r-' + CU.role.toLowerCase();
 
   const cuRole = (CU.role||'').toLowerCase();
+  if (cuRole==='admin') document.getElementById('nav-users').classList.remove('admin-only');
   if (cuRole==='viewer') {
     document.getElementById('nav-new').style.display='none';
     document.getElementById('btn-new-dash').style.display='none';
