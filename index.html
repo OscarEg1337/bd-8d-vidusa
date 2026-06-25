@@ -1298,12 +1298,12 @@ function buildVotoTable() {
   const tbody = document.getElementById('voto-tbody');
   if (!tbody) return;
   const iStyle = 'width:100%;padding:4px 6px;font-size:11px;border:1px solid var(--border);border-radius:4px;background:var(--bg);box-sizing:border-box';
-  const nStyle = 'width:52px;padding:3px 4px;font-size:12px;text-align:center;border:1px solid var(--border);border-radius:4px;background:var(--bg)';
+  const nStyle = 'width:48px;padding:3px 2px;font-size:12px;text-align:center;border:1px solid var(--border);border-radius:4px;background:var(--bg)';
   let html = '';
   for (let r = 1; r <= 10; r++) {
     let scores = '';
     for (let c = 1; c <= 10; c++) {
-      scores += `<td style="padding:2px 3px;text-align:center"><input id="voto-r${r}-c${c}" type="number" min="0" oninput="calcVotos()" style="${nStyle}" /></td>`;
+      scores += `<td style="padding:2px 3px;text-align:center"><select id="voto-r${r}-c${c}" onchange="calcVotos()" style="${nStyle}"><option value="">—</option><option value="1">1</option><option value="2">2</option><option value="3">3</option></select></td>`;
     }
     html += `<tr id="voto-row-${r}" style="border-bottom:1px solid var(--border)">
       <td style="padding:4px 8px;text-align:center;color:var(--muted);font-size:11px;width:24px">${r}</td>
@@ -1318,7 +1318,7 @@ function buildVotoTable() {
 function resetVotoTable() {
   for (let r = 1; r <= 10; r++) {
     const idea = document.getElementById('voto-idea-'+r); if (idea) idea.value = '';
-    for (let c = 1; c <= 10; c++) { const inp = document.getElementById('voto-r'+r+'-c'+c); if (inp) inp.value = ''; }
+    for (let c = 1; c <= 10; c++) { const inp = document.getElementById('voto-r'+r+'-c'+c); if (inp) inp.selectedIndex = 0; }
     const tot = document.getElementById('voto-total-'+r);
     if (tot) { tot.textContent = '0'; tot.style.color = 'var(--muted)'; }
     const row = document.getElementById('voto-row-'+r); if (row) row.style.background = '';
