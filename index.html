@@ -599,7 +599,34 @@ th.f3{min-width:160px;width:160px}
               <option>Felipe Carrillo</option><option>Jose Lopez</option>
             </select>
           </div>
-          <div class="fgroup"><label>Equipo de Trabajo</label><input id="f-Equipo_Trabajo" /></div>
+          <div class="fw" style="font-size:11px;font-weight:700;text-transform:uppercase;color:#28534E;border-bottom:1px solid #98C894;padding-bottom:4px;margin:8px 0;letter-spacing:.6px">Equipo de Trabajo — Miembros</div>
+          <div class="fgroup"><label>Miembro 1</label><input id="et-m1" placeholder="Nombre completo" oninput="updateEquipo()" /></div>
+          <div class="fgroup"><label>Miembro 2</label><input id="et-m2" placeholder="Nombre completo" oninput="updateEquipo()" /></div>
+          <div class="fgroup"><label>Miembro 3</label><input id="et-m3" placeholder="Nombre completo" oninput="updateEquipo()" /></div>
+          <div class="fgroup"><label>Miembro 4</label><input id="et-m4" placeholder="Nombre completo" oninput="updateEquipo()" /></div>
+          <div class="fgroup"><label>Miembro 5</label><input id="et-m5" placeholder="Nombre completo" oninput="updateEquipo()" /></div>
+          <div class="fgroup"><label>Miembro 6</label><input id="et-m6" placeholder="Nombre completo" oninput="updateEquipo()" /></div>
+          <input type="hidden" id="f-Equipo_Trabajo" />
+          <div class="fw" style="font-size:11px;font-weight:700;text-transform:uppercase;color:#28534E;border-bottom:1px solid #98C894;padding-bottom:4px;margin:16px 0 4px 0;letter-spacing:.6px">Tabla de Votación — D4 Causas Raíz</div>
+          <p class="fw" style="font-size:11px;color:var(--muted);margin:0 0 8px 0">Cada miembro puntúa cada idea. La de mayor puntaje se copia automáticamente a Causa Raíz.</p>
+          <div class="fw" style="overflow-x:auto;margin-bottom:8px">
+            <table style="width:100%;border-collapse:collapse;font-size:11px;min-width:620px">
+              <thead>
+                <tr style="background:var(--primary);color:#fff">
+                  <th style="padding:6px 8px;text-align:center;width:28px">#</th>
+                  <th style="padding:6px 8px;text-align:left;min-width:150px">Idea / Causa Raíz</th>
+                  <th id="vh-1" style="padding:6px 6px;min-width:60px;text-align:center">M1</th>
+                  <th id="vh-2" style="padding:6px 6px;min-width:60px;text-align:center">M2</th>
+                  <th id="vh-3" style="padding:6px 6px;min-width:60px;text-align:center">M3</th>
+                  <th id="vh-4" style="padding:6px 6px;min-width:60px;text-align:center">M4</th>
+                  <th id="vh-5" style="padding:6px 6px;min-width:60px;text-align:center">M5</th>
+                  <th id="vh-6" style="padding:6px 6px;min-width:60px;text-align:center">M6</th>
+                  <th style="padding:6px 8px;min-width:48px;text-align:center">Total</th>
+                </tr>
+              </thead>
+              <tbody id="voto-tbody"></tbody>
+            </table>
+          </div>
           <div class="fw" style="font-size:11px;font-weight:700;text-transform:uppercase;color:#28534E;border-bottom:1px solid #98C894;padding-bottom:4px;margin:16px 0 8px 0;letter-spacing:.6px">D2 — Descripción del Problema</div>
           <div class="fgroup fw"><label>Descripción del Problema</label><textarea id="f-Descripcion_Problema"></textarea></div>
           <div class="fw" style="font-size:11px;font-weight:700;text-transform:uppercase;color:#28534E;border-bottom:1px solid #98C894;padding-bottom:4px;margin:16px 0 8px 0;letter-spacing:.6px">D3 — Acción para Contener la No Conformidad</div>
@@ -1212,6 +1239,8 @@ function openNewRec() {
   document.getElementById('f-ID_Registro').value=`8D-${yr}-${num}`;
   document.getElementById('f-Folio').value=String(DB.length+1).padStart(3,'0');
   TOGGLE_KEYS.forEach(k=>setSatBtns(k,''));
+  for(let i=1;i<=6;i++){const el=document.getElementById('et-m'+i);if(el)el.value='';}
+  resetVotoTable(); updateEquipo();
   switchTab(0);
   openModal('rec-modal');
 }
@@ -1223,6 +1252,9 @@ function openEditRec(id) {
   document.getElementById('rec-modal-title').textContent='Editar Registro';
   COLS.forEach(c=>{const el=document.getElementById('f-'+c.k);if(el)el.value=r[c.k]||'';});
   TOGGLE_KEYS.forEach(k=>setSatBtns(k,r[k]||''));
+  const mems=(r.Equipo_Trabajo||'').split(',').map(s=>s.trim());
+  for(let i=1;i<=6;i++){const el=document.getElementById('et-m'+i);if(el)el.value=mems[i-1]||'';}
+  resetVotoTable(); updateEquipo();
   switchTab(0);
   openModal('rec-modal');
 }
@@ -1243,6 +1275,80 @@ function saveRec() {
   saveCache(DB);
   closeModal('rec-modal');
   refreshDash();
+}
+
+// ═══════════════════════════════════════════════
+// VOTING TABLE
+// ═══════════════════════════════════════════════
+function buildVotoTable() {
+  const tbody = document.getElementById('voto-tbody');
+  if (!tbody) return;
+  const iStyle = 'width:100%;padding:4px 6px;font-size:11px;border:1px solid var(--border);border-radius:4px;background:var(--bg);box-sizing:border-box';
+  const nStyle = 'width:52px;padding:3px 4px;font-size:12px;text-align:center;border:1px solid var(--border);border-radius:4px;background:var(--bg)';
+  let html = '';
+  for (let r = 1; r <= 10; r++) {
+    let scores = '';
+    for (let c = 1; c <= 6; c++) {
+      scores += `<td style="padding:2px 3px;text-align:center"><input id="voto-r${r}-c${c}" type="number" min="0" oninput="calcVotos()" style="${nStyle}" /></td>`;
+    }
+    html += `<tr id="voto-row-${r}" style="border-bottom:1px solid var(--border)">
+      <td style="padding:4px 8px;text-align:center;color:var(--muted);font-size:11px;width:24px">${r}</td>
+      <td style="padding:2px 4px"><input id="voto-idea-${r}" type="text" oninput="calcVotos()" placeholder="Idea / causa raíz..." style="${iStyle}" /></td>
+      ${scores}
+      <td style="padding:4px 8px;text-align:center;font-weight:700;font-size:13px;color:var(--muted)" id="voto-total-${r}">0</td>
+    </tr>`;
+  }
+  tbody.innerHTML = html;
+}
+
+function resetVotoTable() {
+  for (let r = 1; r <= 10; r++) {
+    const idea = document.getElementById('voto-idea-'+r); if (idea) idea.value = '';
+    for (let c = 1; c <= 6; c++) { const inp = document.getElementById('voto-r'+r+'-c'+c); if (inp) inp.value = ''; }
+    const tot = document.getElementById('voto-total-'+r);
+    if (tot) { tot.textContent = '0'; tot.style.color = 'var(--muted)'; }
+    const row = document.getElementById('voto-row-'+r); if (row) row.style.background = '';
+  }
+}
+
+function updateEquipo() {
+  const names = [];
+  for (let i = 1; i <= 6; i++) {
+    const el = document.getElementById('et-m'+i);
+    names.push(el ? el.value.trim() : '');
+  }
+  for (let i = 1; i <= 6; i++) {
+    const th = document.getElementById('vh-'+i);
+    if (th) th.textContent = names[i-1] || ('M'+i);
+  }
+  const etEl = document.getElementById('f-Equipo_Trabajo');
+  if (etEl) etEl.value = names.filter(Boolean).join(', ');
+}
+
+function calcVotos() {
+  let maxTotal = -1, bestIdea = '';
+  for (let r = 1; r <= 10; r++) {
+    let total = 0;
+    for (let c = 1; c <= 6; c++) {
+      const inp = document.getElementById('voto-r'+r+'-c'+c);
+      total += inp ? Math.max(0, parseInt(inp.value) || 0) : 0;
+    }
+    const totEl = document.getElementById('voto-total-'+r);
+    if (totEl) { totEl.textContent = total; totEl.style.color = total > 0 ? 'var(--primary)' : 'var(--muted)'; }
+    const row = document.getElementById('voto-row-'+r); if (row) row.style.background = '';
+    const idea = (document.getElementById('voto-idea-'+r) || {}).value || '';
+    if (idea.trim() && total > maxTotal) { maxTotal = total; bestIdea = idea.trim(); }
+  }
+  if (maxTotal > 0) {
+    for (let r = 1; r <= 10; r++) {
+      const idea = (document.getElementById('voto-idea-'+r) || {}).value || '';
+      const tot = parseInt((document.getElementById('voto-total-'+r) || {}).textContent) || 0;
+      const row = document.getElementById('voto-row-'+r);
+      if (row && idea.trim() && tot === maxTotal) row.style.background = 'rgba(1,168,68,0.09)';
+    }
+  }
+  const causaEl = document.getElementById('f-Causa_Raiz');
+  if (causaEl && bestIdea) causaEl.value = bestIdea;
 }
 
 // ═══════════════════════════════════════════════
@@ -1361,6 +1467,7 @@ if (localStorage.getItem('v_app_ver') !== '3') {
   localStorage.removeItem('v_sess');
   localStorage.setItem('v_app_ver', '3');
 }
+buildVotoTable();
 checkSess();
 </script>
 </body>
