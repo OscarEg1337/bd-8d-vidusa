@@ -1180,9 +1180,12 @@ function renderTable() {
 // ROW BUILDER
 // ═══════════════════════════════════════════════
 function buildRow(r) {
-  const canEdit = (CU.role||'').toLowerCase()==='admin'
-    || ((CU.role||'').toLowerCase()==='editor' && r.Fraccionamiento===CU.fracc)
-    || (r.Creado_Por && r.Creado_Por === CU.username);
+  const isAdmin  = (CU.role||'').toLowerCase() === 'admin';
+  const isViewer = (CU.role||'').toLowerCase() === 'viewer';
+  const isOwner  = r.Creado_Por === CU.username;
+  const canEdit  = isAdmin
+    || isOwner
+    || (!isViewer && !r.Creado_Por);
 
   const cells = COLS.map((c,i) => {
     let cls='',style='';
