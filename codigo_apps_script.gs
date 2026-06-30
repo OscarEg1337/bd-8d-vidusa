@@ -71,22 +71,10 @@ function getSheet() {
   var ss    = SpreadsheetApp.getActiveSpreadsheet();
   var sheet = ss.getSheetByName(SHEET_NAME);
   if (!sheet) { sheet = ss.insertSheet(SHEET_NAME); }
-
   if (sheet.getLastRow() === 0) {
-    // Hoja vacía: escribir encabezados
     sheet.appendRow(HEADERS);
     sheet.setFrozenRows(1);
-  } else {
-    // Hoja con datos: verificar si la fila 1 coincide con HEADERS
-    var currentHeaders = sheet.getRange(1, 1, 1, HEADERS.length).getValues()[0];
-    var headersMatch = HEADERS.every(function(h, i) { return currentHeaders[i] === h; });
-    if (!headersMatch) {
-      // Encabezados viejos: reemplazar fila 1 con los nuevos
-      sheet.getRange(1, 1, 1, HEADERS.length).setValues([HEADERS]);
-      sheet.setFrozenRows(1);
-    }
   }
-
   return sheet;
 }
 
@@ -155,6 +143,8 @@ function doPost(e) {
         var urow   = urows[i];
         var stored = String(urow[1]);
         if (String(urow[0]).trim() !== uname) continue;
+        // Intento 1: contraseña en texto plano (hoja normal)
+        // Intento 2: hoja tiene hash SHA-256 (sembrada por versión anterior)
         var match = (stored === upass) || (stored === sha256Hex(upass));
         if (match) {
           return jsonOut({
@@ -170,37 +160,6 @@ function doPost(e) {
         return jsonOut({ status: 'error', message: 'Usuario o contraseña incorrectos' });
       }
       return jsonOut({ status: 'error', message: 'Usuario o contraseña incorrectos' });
-    } catch (err) {
-      return jsonOut({ status: 'error', message: err.message });
-    }
-  }
-
-  // ADD_USER: append new user to USUARIOS sheet
-  if (method === 'ADD_USER') {
-    try {
-      var newUname  = String(body.username || '').trim();
-      var newUpass  = String(body.password || '').trim();
-      var newNombre = String(body.nombre   || '').trim();
-      var newRol    = String(body.rol      || '').trim();
-      if (!newUname || !newUpass || !newNombre || !newRol) {
-        return jsonOut({ status: 'error', message: 'Todos los campos son requeridos' });
-      }
-      var validRoles = ['Admin', 'Editor', 'Viewer'];
-      if (validRoles.indexOf(newRol) === -1) {
-        return jsonOut({ status: 'error', message: 'Rol inválido. Usa Admin, Editor o Viewer' });
-      }
-      var usheet2 = getUsuariosSheet();
-      var ulr2    = usheet2.getLastRow();
-      if (ulr2 >= 2) {
-        var existing = usheet2.getRange(2, 1, ulr2 - 1, 1).getValues();
-        for (var j = 0; j < existing.length; j++) {
-          if (String(existing[j][0]).trim().toLowerCase() === newUname.toLowerCase()) {
-            return jsonOut({ status: 'error', message: 'El username "' + newUname + '" ya existe' });
-          }
-        }
-      }
-      usheet2.appendRow([newUname, newUpass, newNombre, newRol, '']);
-      return jsonOut({ status: 'ok', message: 'Usuario creado' });
     } catch (err) {
       return jsonOut({ status: 'error', message: err.message });
     }

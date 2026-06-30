@@ -612,6 +612,7 @@ th.f3{min-width:160px;width:160px}
           <div class="fgroup"><label>Miembro 9</label><input id="et-m9" placeholder="Nombre completo" oninput="updateEquipo()" /></div>
           <div class="fgroup"><label>Miembro 10</label><input id="et-m10" placeholder="Nombre completo" oninput="updateEquipo()" /></div>
           <input type="hidden" id="f-Equipo_Trabajo" />
+          <input type="hidden" id="f-Creado_Por" />
           <div class="fw" style="font-size:11px;font-weight:700;text-transform:uppercase;color:#28534E;border-bottom:1px solid #98C894;padding-bottom:4px;margin:16px 0 4px 0;letter-spacing:.6px">Tabla de Votación — D4 Causas Raíz</div>
           <p class="fw" style="font-size:11px;color:var(--muted);margin:0 0 8px 0">Cada miembro puntúa cada idea. La de mayor puntaje se copia automáticamente a Causa Raíz.</p>
           <div class="fw" style="overflow-x:auto;margin-bottom:8px">
@@ -664,6 +665,31 @@ th.f3{min-width:160px;width:160px}
           <div class="fgroup"><label>Responsable Acción 3</label><input id="f-Responsable_Accion_3" /></div>
           <div class="fgroup"><label>Fecha Programada 3</label><input id="f-Fecha_Programada_3" type="date" /></div>
           <div class="fgroup"><label>Fecha Realización 3</label><input id="f-Fecha_Realizacion_3" type="date" /></div>
+          <div class="fw" style="font-size:11px;font-weight:700;text-transform:uppercase;color:#28534E;border-bottom:1px solid #98C894;padding-bottom:4px;margin:12px 0 8px 0;letter-spacing:.6px">Acción Correctiva 4</div>
+          <div class="fgroup fw"><label>Acción Correctiva 4</label><textarea id="f-Accion_Correctiva_4"></textarea></div>
+          <div class="fgroup"><label>Responsable Acción 4</label><input id="f-Responsable_Accion_4" /></div>
+          <div class="fgroup"><label>Fecha Programada 4</label><input id="f-Fecha_Programada_4" type="date" /></div>
+          <div class="fgroup"><label>Fecha Realización 4</label><input id="f-Fecha_Realizacion_4" type="date" /></div>
+          <div class="fw" style="font-size:11px;font-weight:700;text-transform:uppercase;color:#28534E;border-bottom:1px solid #98C894;padding-bottom:4px;margin:12px 0 8px 0;letter-spacing:.6px">Acción Correctiva 5</div>
+          <div class="fgroup fw"><label>Acción Correctiva 5</label><textarea id="f-Accion_Correctiva_5"></textarea></div>
+          <div class="fgroup"><label>Responsable Acción 5</label><input id="f-Responsable_Accion_5" /></div>
+          <div class="fgroup"><label>Fecha Programada 5</label><input id="f-Fecha_Programada_5" type="date" /></div>
+          <div class="fgroup"><label>Fecha Realización 5</label><input id="f-Fecha_Realizacion_5" type="date" /></div>
+          <div class="fw" style="font-size:11px;font-weight:700;text-transform:uppercase;color:#28534E;border-bottom:1px solid #98C894;padding-bottom:4px;margin:12px 0 8px 0;letter-spacing:.6px">Acción Correctiva 6</div>
+          <div class="fgroup fw"><label>Acción Correctiva 6</label><textarea id="f-Accion_Correctiva_6"></textarea></div>
+          <div class="fgroup"><label>Responsable Acción 6</label><input id="f-Responsable_Accion_6" /></div>
+          <div class="fgroup"><label>Fecha Programada 6</label><input id="f-Fecha_Programada_6" type="date" /></div>
+          <div class="fgroup"><label>Fecha Realización 6</label><input id="f-Fecha_Realizacion_6" type="date" /></div>
+          <div class="fw" style="font-size:11px;font-weight:700;text-transform:uppercase;color:#28534E;border-bottom:1px solid #98C894;padding-bottom:4px;margin:12px 0 8px 0;letter-spacing:.6px">Acción Correctiva 7</div>
+          <div class="fgroup fw"><label>Acción Correctiva 7</label><textarea id="f-Accion_Correctiva_7"></textarea></div>
+          <div class="fgroup"><label>Responsable Acción 7</label><input id="f-Responsable_Accion_7" /></div>
+          <div class="fgroup"><label>Fecha Programada 7</label><input id="f-Fecha_Programada_7" type="date" /></div>
+          <div class="fgroup"><label>Fecha Realización 7</label><input id="f-Fecha_Realizacion_7" type="date" /></div>
+          <div class="fw" style="font-size:11px;font-weight:700;text-transform:uppercase;color:#28534E;border-bottom:1px solid #98C894;padding-bottom:4px;margin:12px 0 8px 0;letter-spacing:.6px">Acción Correctiva 8</div>
+          <div class="fgroup fw"><label>Acción Correctiva 8</label><textarea id="f-Accion_Correctiva_8"></textarea></div>
+          <div class="fgroup"><label>Responsable Acción 8</label><input id="f-Responsable_Accion_8" /></div>
+          <div class="fgroup"><label>Fecha Programada 8</label><input id="f-Fecha_Programada_8" type="date" /></div>
+          <div class="fgroup"><label>Fecha Realización 8</label><input id="f-Fecha_Realizacion_8" type="date" /></div>
           <div class="fgroup fw"><label>Comentarios Acción</label><textarea id="f-Comentarios_Accion"></textarea></div>
           <div class="fgroup fw">
             <label>Resultado Acción</label>
@@ -797,6 +823,26 @@ const COLS = [
   {k:'Responsable_Accion_3', l:'Responsable Acción 3',  g:'acc'},
   {k:'Fecha_Programada_3',   l:'Fecha Programada 3',    g:'acc'},
   {k:'Fecha_Realizacion_3',  l:'Fecha Realización 3',   g:'acc'},
+  {k:'Accion_Correctiva_4',  l:'Acción Correctiva 4',   g:'acc'},
+  {k:'Responsable_Accion_4', l:'Responsable Acción 4',  g:'acc'},
+  {k:'Fecha_Programada_4',   l:'Fecha Programada 4',    g:'acc'},
+  {k:'Fecha_Realizacion_4',  l:'Fecha Realización 4',   g:'acc'},
+  {k:'Accion_Correctiva_5',  l:'Acción Correctiva 5',   g:'acc'},
+  {k:'Responsable_Accion_5', l:'Responsable Acción 5',  g:'acc'},
+  {k:'Fecha_Programada_5',   l:'Fecha Programada 5',    g:'acc'},
+  {k:'Fecha_Realizacion_5',  l:'Fecha Realización 5',   g:'acc'},
+  {k:'Accion_Correctiva_6',  l:'Acción Correctiva 6',   g:'acc'},
+  {k:'Responsable_Accion_6', l:'Responsable Acción 6',  g:'acc'},
+  {k:'Fecha_Programada_6',   l:'Fecha Programada 6',    g:'acc'},
+  {k:'Fecha_Realizacion_6',  l:'Fecha Realización 6',   g:'acc'},
+  {k:'Accion_Correctiva_7',  l:'Acción Correctiva 7',   g:'acc'},
+  {k:'Responsable_Accion_7', l:'Responsable Acción 7',  g:'acc'},
+  {k:'Fecha_Programada_7',   l:'Fecha Programada 7',    g:'acc'},
+  {k:'Fecha_Realizacion_7',  l:'Fecha Realización 7',   g:'acc'},
+  {k:'Accion_Correctiva_8',  l:'Acción Correctiva 8',   g:'acc'},
+  {k:'Responsable_Accion_8', l:'Responsable Acción 8',  g:'acc'},
+  {k:'Fecha_Programada_8',   l:'Fecha Programada 8',    g:'acc'},
+  {k:'Fecha_Realizacion_8',  l:'Fecha Realización 8',   g:'acc'},
   {k:'Comentarios_Accion',l:'Comentarios Acción',g:'acc'},
   {k:'Resultado_Accion',l:'Resultado Acción',g:'acc',t:1},
   {k:'Verificacion_D6',l:'Verificación D6', g:'d6'},
@@ -1134,7 +1180,9 @@ function renderTable() {
 // ROW BUILDER
 // ═══════════════════════════════════════════════
 function buildRow(r) {
-  const canEdit = (CU.role||'').toLowerCase()==='admin' || ((CU.role||'').toLowerCase()==='editor' && r.Fraccionamiento===CU.fracc);
+  const canEdit = (CU.role||'').toLowerCase()==='admin'
+    || ((CU.role||'').toLowerCase()==='editor' && r.Fraccionamiento===CU.fracc)
+    || (r.Creado_Por && r.Creado_Por === CU.username);
 
   const cells = COLS.map((c,i) => {
     let cls='',style='';
@@ -1265,6 +1313,7 @@ function openNewRec() {
   COLS.forEach(c=>{const el=document.getElementById('f-'+c.k);if(el)el.value='';});
   document.getElementById('f-ID_Registro').value=`8D-${yr}-${num}`;
   document.getElementById('f-Folio').value=String(DB.length+1).padStart(3,'0');
+  document.getElementById('f-Creado_Por').value=CU.username;
   TOGGLE_KEYS.forEach(k=>setSatBtns(k,''));
   for(let i=1;i<=10;i++){const el=document.getElementById('et-m'+i);if(el)el.value='';}
   resetVotoTable(); updateEquipo();
@@ -1278,6 +1327,7 @@ function openEditRec(id) {
   EDIT_ID=id;
   document.getElementById('rec-modal-title').textContent='Editar Registro';
   COLS.forEach(c=>{const el=document.getElementById('f-'+c.k);if(el)el.value=r[c.k]||'';});
+  document.getElementById('f-Creado_Por').value=r.Creado_Por||'';
   TOGGLE_KEYS.forEach(k=>setSatBtns(k,r[k]||''));
   const mems=(r.Equipo_Trabajo||'').split(',').map(s=>s.trim());
   for(let i=1;i<=10;i++){const el=document.getElementById('et-m'+i);if(el)el.value=mems[i-1]||'';}
@@ -1289,6 +1339,7 @@ function openEditRec(id) {
 function saveRec() {
   const data={};
   COLS.forEach(c=>{const el=document.getElementById('f-'+c.k);data[c.k]=el?el.value:'';});
+  data.Creado_Por=document.getElementById('f-Creado_Por').value;
   if(EDIT_ID){
     const idx=DB.findIndex(r=>r.ID_Registro===EDIT_ID);
     if(idx>=0) DB[idx]={...DB[idx],...data};
