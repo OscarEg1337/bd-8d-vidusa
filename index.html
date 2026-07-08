@@ -366,6 +366,18 @@ th.f3{min-width:160px;width:160px}
 /* ─── FILTER ─── */
 .filter-card{background:rgba(255,255,255,0.85);border:1px solid var(--border);border-radius:var(--r);padding:24px;margin-bottom:18px;box-shadow:0 2px 8px rgba(40,83,78,0.06)}
 
+/* ─── RESUMEN TABLE ─── */
+#page-resumen .table-scroll{max-height:calc(100vh - 300px)}
+#page-resumen table{table-layout:auto;width:100%;min-width:unset}
+#page-resumen thead th{white-space:normal;min-width:120px;vertical-align:middle}
+#page-resumen thead th.rc-fracc{min-width:130px;max-width:160px}
+#page-resumen thead th.rc-short{min-width:130px;max-width:180px}
+#page-resumen thead th.rc-long{min-width:180px;max-width:300px}
+#page-resumen tbody td{white-space:normal;overflow:visible;text-overflow:unset;max-width:unset;vertical-align:top;line-height:1.5;padding:10px 14px}
+#page-resumen tbody td.rc-fracc{min-width:130px;max-width:160px;font-weight:600}
+#page-resumen tbody td.rc-short{min-width:130px;max-width:190px}
+#page-resumen tbody td.rc-long{min-width:180px;max-width:280px;color:var(--text2)}
+
 /* ─── URL BANNER ─── */
 #url-banner{display:none;background:rgba(180,110,0,0.1);border-bottom:1px solid rgba(180,110,0,0.25);color:var(--warn-tx);padding:10px 20px;font-size:13px;font-weight:600;text-align:center;letter-spacing:0.2px;flex-shrink:0;z-index:99}
 #url-banner i{margin-right:6px;color:var(--warn-tx)}
@@ -1333,16 +1345,19 @@ function renderResumen() {
     if(rows.some(r=>String(r['Accion_Correctiva_'+i]||'').trim()!==''))acCols.push(i);
   }
 
-  let head='<th class="f1" style="left:0">Fraccionamiento</th><th>Superintendente</th><th>Facilitador PMO</th><th>Descripción Problema</th>';
-  acCols.forEach(i=>head+=`<th>Acción Correctiva ${i}</th>`);
+  let head='<th class="f1 rc-fracc" style="left:0">Fraccionamiento</th>'
+    +'<th class="rc-short">Superintendente</th>'
+    +'<th class="rc-short">Facilitador PMO</th>'
+    +'<th class="rc-long">Descripción Problema</th>';
+  acCols.forEach(i=>head+=`<th class="rc-long">Acción Correctiva ${i}</th>`);
   document.getElementById('resumen-thead').innerHTML=`<tr>${head}</tr>`;
 
   document.getElementById('resumen-tbody').innerHTML=rows.map(r=>{
-    let tds=`<td class="f1" style="left:0" title="${esc(r.Fraccionamiento||'')}">${esc(r.Fraccionamiento||'')}</td>`
-      +`<td title="${esc(r.Superintendente||'')}">${esc(r.Superintendente||'')}</td>`
-      +`<td title="${esc(r.Facilitador_BPO||'')}">${esc(r.Facilitador_BPO||'')}</td>`
-      +`<td title="${esc(r.Descripcion_Problema||'')}">${esc(r.Descripcion_Problema||'')}</td>`;
-    acCols.forEach(i=>{const v=r['Accion_Correctiva_'+i]||'';tds+=`<td title="${esc(v)}">${esc(v)}</td>`;});
+    let tds=`<td class="f1 rc-fracc" style="left:0">${esc(r.Fraccionamiento||'')}</td>`
+      +`<td class="rc-short">${esc(r.Superintendente||'')}</td>`
+      +`<td class="rc-short">${esc(r.Facilitador_BPO||'')}</td>`
+      +`<td class="rc-long">${esc(r.Descripcion_Problema||'')}</td>`;
+    acCols.forEach(i=>{const v=r['Accion_Correctiva_'+i]||'';tds+=`<td class="rc-long">${esc(v)}</td>`;});
     return `<tr>${tds}</tr>`;
   }).join('')||
     '<tr><td colspan="100%" style="text-align:center;padding:32px;color:var(--muted)">Sin resultados</td></tr>';
