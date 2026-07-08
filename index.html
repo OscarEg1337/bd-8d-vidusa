@@ -368,15 +368,16 @@ th.f3{min-width:160px;width:160px}
 
 /* ─── RESUMEN TABLE ─── */
 #page-resumen .table-scroll{max-height:calc(100vh - 300px)}
-#page-resumen table{table-layout:auto;width:100%;min-width:unset}
-#page-resumen thead th{white-space:normal;min-width:120px;vertical-align:middle}
-#page-resumen thead th.rc-fracc{min-width:130px;max-width:160px}
-#page-resumen thead th.rc-short{min-width:130px;max-width:180px}
-#page-resumen thead th.rc-long{min-width:180px;max-width:300px}
-#page-resumen tbody td{white-space:normal;overflow:visible;text-overflow:unset;max-width:unset;vertical-align:top;line-height:1.5;padding:10px 14px}
-#page-resumen tbody td.rc-fracc{min-width:130px;max-width:160px;font-weight:600}
-#page-resumen tbody td.rc-short{min-width:130px;max-width:190px}
-#page-resumen tbody td.rc-long{min-width:180px;max-width:280px;color:var(--text2)}
+#page-resumen table{table-layout:fixed;width:100%}
+#page-resumen thead th{top:0 !important;white-space:normal;vertical-align:middle;background:var(--thead-bg)}
+#page-resumen thead th.rc-fracc{width:150px}
+#page-resumen thead th.rc-short{width:160px}
+#page-resumen thead th.rc-long{width:260px}
+#page-resumen tbody td{white-space:normal;overflow:hidden;text-overflow:unset;max-width:unset;vertical-align:top;line-height:1.5;padding:10px 14px}
+#page-resumen tbody td.rc-fracc{width:150px;font-weight:600;background:#fff}
+#page-resumen tbody td.rc-short{width:160px}
+#page-resumen tbody td.rc-long{width:260px;color:var(--text2)}
+#page-resumen tbody tr:hover td.rc-fracc{background:#f2f7f1}
 
 /* ─── URL BANNER ─── */
 #url-banner{display:none;background:rgba(180,110,0,0.1);border-bottom:1px solid rgba(180,110,0,0.25);color:var(--warn-tx);padding:10px 20px;font-size:13px;font-weight:600;text-align:center;letter-spacing:0.2px;flex-shrink:0;z-index:99}
@@ -1344,6 +1345,14 @@ function renderResumen() {
   for(let i=1;i<=8;i++){
     if(rows.some(r=>String(r['Accion_Correctiva_'+i]||'').trim()!==''))acCols.push(i);
   }
+
+  // colgroup fija anchos independientemente del contenido
+  const tbl=document.getElementById('resumen-thead').closest('table');
+  const oldCg=tbl.querySelector('colgroup');if(oldCg)oldCg.remove();
+  let colgroup='<colgroup><col style="width:150px"><col style="width:160px"><col style="width:160px"><col style="width:260px">';
+  acCols.forEach(()=>colgroup+='<col style="width:260px">');
+  colgroup+='</colgroup>';
+  tbl.insertAdjacentHTML('afterbegin',colgroup);
 
   let head='<th class="f1 rc-fracc" style="left:0">Fraccionamiento</th>'
     +'<th class="rc-short">Superintendente</th>'
