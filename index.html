@@ -43,7 +43,6 @@
   --border2: rgba(40,83,78,0.22);
 
   --thead-bg:  #28534E;
-  --grp-bg:    #1A504A;
 
   --ok-bg:   rgba(1,200,76,0.1);
   --ok-tx:   #016B2A;
@@ -250,9 +249,6 @@ a:hover{color:var(--accent)}
 .table-scroll{overflow:auto;max-height:calc(100vh - 360px)}
 table{border-collapse:collapse;width:max-content;min-width:100%}
 thead th{background:var(--thead-bg);color:rgba(255,255,255,0.92);padding:11px 14px;text-align:left;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;white-space:nowrap;position:sticky;top:0;z-index:10}
-.grp-row th{background:var(--grp-bg);color:var(--accent-pale);font-size:9px;text-align:center;padding:5px;letter-spacing:1px;position:sticky;top:0;z-index:10}
-thead .grp-row th{top:0;z-index:11}
-thead tr:last-child th{top:26px}
 tbody td{padding:10px 14px;font-size:12px;border-bottom:1px solid rgba(40,83,78,0.06);white-space:nowrap;max-width:180px;overflow:hidden;text-overflow:ellipsis;transition:background 0.12s;color:var(--text)}
 tbody tr:hover td{background:rgba(40,83,78,0.04)}
 tbody tr:hover td.f1,tbody tr:hover td.f2,tbody tr:hover td.f3{background:#f2f7f1}
@@ -262,7 +258,6 @@ tbody tr:hover td.f1,tbody tr:hover td.f2,tbody tr:hover td.f3{background:#f2f7f
 .f2{position:sticky;left:130px;z-index:5;background:#fff}
 .f3{position:sticky;left:210px;z-index:5;background:#fff}
 thead .f1,thead .f2,thead .f3{z-index:15;background:var(--thead-bg)}
-thead .grp-row .f1,thead .grp-row .f2,thead .grp-row .f3{background:var(--grp-bg);z-index:16}
 th.f1{min-width:130px;width:130px}
 th.f2{min-width:80px;width:80px}
 th.f3{min-width:160px;width:160px}
@@ -1087,8 +1082,8 @@ function bootApp() {
     document.getElementById('btn-new-dash').style.display='none';
   }
 
-  buildHeaders();
   nav('dashboard');
+  buildHeaders();
   fetchAllRecs();
   refreshDash();
 }
@@ -1128,27 +1123,6 @@ function closeSidebar() {
 // TABLE HEADERS
 // ═══════════════════════════════════════════════
 function buildHeaders() {
-  const groups = [
-    {label:'',    cols:['ID_Registro','Folio','Fraccionamiento']},
-    {label:'REGISTRO BASE', cols:COLS.filter(c=>c.g==='base'&&!['ID_Registro','Folio','Fraccionamiento'].includes(c.k)).map(c=>c.k)},
-    {label:'ACCIÓN CORRECTIVA', cols:COLS.filter(c=>c.g==='acc').map(c=>c.k)},
-    {label:'D-6 VERIFICACIÓN',  cols:COLS.filter(c=>c.g==='d6').map(c=>c.k)},
-    {label:'D-7 ESTANDARIZACIÓN',cols:COLS.filter(c=>c.g==='d7').map(c=>c.k)},
-    {label:'D-8 EVALUACIÓN',    cols:COLS.filter(c=>c.g==='d8').map(c=>c.k)},
-    {label:'',    cols:['_actions']},
-  ];
-
-  let grpRow = '';
-  groups.forEach((g,gi) => {
-    if (gi===0) {
-      grpRow += `<th class="f1" style="left:0"></th><th class="f2" style="left:130px"></th><th class="f3" style="left:210px"></th>`;
-    } else if (gi===groups.length-1) {
-      grpRow += `<th></th>`;
-    } else {
-      grpRow += `<th colspan="${g.cols.length}" style="border-left:2px solid rgba(255,255,255,0.12)">${g.label}</th>`;
-    }
-  });
-
   let colRow = '';
   COLS.forEach((c,i) => {
     let cls='',style='';
@@ -1159,8 +1133,7 @@ function buildHeaders() {
   });
   colRow += '<th>Acciones</th>';
 
-  document.getElementById('main-thead').innerHTML =
-    `<tr class="grp-row">${grpRow}</tr><tr>${colRow}</tr>`;
+  document.getElementById('main-thead').innerHTML = `<tr>${colRow}</tr>`;
 }
 
 function buildSearchHeaders() {
