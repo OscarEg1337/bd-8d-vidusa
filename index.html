@@ -8,6 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 /* ═══════════════════════════════════════════════
    VIDUSA PMO DESIGN SYSTEM
@@ -492,6 +493,22 @@ th.f3{min-width:160px;width:160px}
           <button class="btn" id="btn-refresh" onclick="fetchAllRecs()" title="Actualizar desde servidor" style="background:var(--card-solid);border:1px solid var(--border2);color:var(--text2)"><i class="fas fa-sync-alt"></i></button>
           <button class="btn btn-primary" id="btn-new-dash" onclick="openNewRec()"><i class="fas fa-plus"></i> Nuevo</button>
         </div>
+        <div class="filter-card">
+          <div class="fgrid">
+            <div class="fgroup"><label>Fraccionamiento</label>
+              <select id="dg-fracc" onchange="doSearch()"><option value="">Todos</option></select>
+            </div>
+            <div class="fgroup"><label>Estatus Folio</label>
+              <select id="dg-est" onchange="doSearch()">
+                <option value="">Todos</option><option>Abierto</option><option>Cerrado</option><option>En proceso</option>
+              </select>
+            </div>
+            <div class="fgroup"><label>Superintendente</label>
+              <select id="dg-super" onchange="doSearch()"><option value="">Todos</option></select>
+            </div>
+          </div>
+          <button class="btn btn-sec" onclick="clearDashFilter()"><i class="fas fa-times"></i> Limpiar</button>
+        </div>
         <div class="table-wrap">
           <div class="table-scroll"><table><thead id="main-thead"></thead><tbody id="main-tbody"></tbody></table></div>
           <div class="pager"><div class="pager-info" id="pager-info"></div><div class="pager-ctrl" id="pager-ctrl"></div></div>
@@ -566,9 +583,9 @@ th.f3{min-width:160px;width:160px}
         <div class="sec-title" style="margin-bottom:16px">Exportar Datos</div>
         <div class="export-grid">
           <div class="export-card">
-            <h3><i class="fas fa-file-csv" style="color:var(--primary)"></i> Exportar CSV</h3>
-            <p>Descarga todos los registros como archivo CSV compatible con Excel (incluye BOM UTF-8).</p>
-            <button class="btn btn-primary" onclick="exportCSV()"><i class="fas fa-download"></i> Descargar CSV</button>
+            <h3><i class="fas fa-file-excel" style="color:var(--primary)"></i> Exportar Excel</h3>
+            <p>Descarga todos los registros como archivo XLSX (Excel), compatible con Power BI y sin pérdida de datos.</p>
+            <button class="btn btn-primary" onclick="exportXLSX()"><i class="fas fa-download"></i> Descargar XLSX</button>
           </div>
           <div class="export-card">
             <h3><i class="fas fa-print" style="color:var(--primary)"></i> Reporte Imprimible</h3>
@@ -1171,15 +1188,43 @@ function animateCounter(el, target, isPercent) {
 // DASHBOARD RENDER
 // ═══════════════════════════════════════════════
 function refreshDash() {
+  populateDashFilters();
   FILT = [...DB];
   const q = document.getElementById('gsearch').value.toLowerCase();
+  const fracc = document.getElementById('dg-fracc').value;
+  const est = document.getElementById('dg-est').value;
+  const sup = document.getElementById('dg-super').value;
   if (q) FILT = FILT.filter(r=>COLS.some(c=>String(r[c.k]||'').toLowerCase().includes(q)));
+  if (fracc) FILT = FILT.filter(r=>r.Fraccionamiento===fracc);
+  if (est) FILT = FILT.filter(r=>r.Estatus_Folio_D8===est||r.Estatus_Folio_D6===est);
+  if (sup) FILT = FILT.filter(r=>r.Superintendente===sup);
   PAGE = 1;
   renderTable();
   updateKPIs();
 }
 
 function doSearch() { refreshDash(); }
+
+function clearDashFilter() {
+  document.getElementById('dg-fracc').value='';
+  document.getElementById('dg-est').value='';
+  document.getElementById('dg-super').value='';
+  document.getElementById('gsearch').value='';
+  refreshDash();
+}
+
+function populateDashFilters() {
+  const fill = (id, field) => {
+    const sel = document.getElementById(id);
+    if (!sel) return;
+    const cur = sel.value;
+    const vals = [...new Set(DB.map(r=>r[field]).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'es'));
+    sel.innerHTML = '<option value="">Todos</option>' + vals.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join('');
+    if (vals.includes(cur)) sel.value = cur;
+  };
+  fill('dg-fracc', 'Fraccionamiento');
+  fill('dg-super', 'Superintendente');
+}
 
 function renderTable() {
   const start=(PAGE-1)*PZ, end=start+PZ;
@@ -1614,16 +1659,18 @@ function toast(msg,type='ok'){
 // ═══════════════════════════════════════════════
 // EXPORT
 // ═══════════════════════════════════════════════
-function exportCSV() {
-  const hdr=COLS.map(c=>c.l).join(',');
-  const rows=DB.map(r=>COLS.map(c=>{const v=String(r[c.k]||'').replace(/"/g,'""');return `"${v}"`;}).join(','));
-  const csv=[hdr,...rows].join('\r\n');
-  const blob=new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8;'});
-  const url=URL.createObjectURL(blob);
-  const a=document.createElement('a');
-  a.href=url;a.download=`BD_8D_VIDUSA_${new Date().toISOString().slice(0,10)}.csv`;
-  a.click();URL.revokeObjectURL(url);
-  toast('CSV exportado');
+function exportXLSX() {
+  const rows=DB.map(r=>{
+    const o={};
+    COLS.forEach(c=>{ o[c.l]=r[c.k]||''; });
+    return o;
+  });
+  const ws=XLSX.utils.json_to_sheet(rows, {header:COLS.map(c=>c.l)});
+  ws['!cols']=COLS.map(c=>({wch:Math.max(12,c.l.length+2)}));
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'BD 8D');
+  XLSX.writeFile(wb, `BD_8D_VIDUSA_${new Date().toISOString().slice(0,10)}.xlsx`);
+  toast('Excel exportado');
 }
 
 function exportPrint() {
