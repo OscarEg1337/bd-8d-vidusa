@@ -670,6 +670,7 @@ th.f3{min-width:160px;width:160px}
           <div class="fgroup"><label>Miembro 10</label><input id="et-m10" placeholder="Nombre completo" oninput="updateEquipo()" /></div>
           <input type="hidden" id="f-Equipo_Trabajo" />
           <input type="hidden" id="f-Creado_Por" />
+          <input type="hidden" id="f-Votacion_D4_JSON" />
           <div class="fw" style="font-size:11px;font-weight:700;text-transform:uppercase;color:#28534E;border-bottom:1px solid #98C894;padding-bottom:4px;margin:16px 0 4px 0;letter-spacing:.6px">Tabla de Votación — D4 Causas Raíz</div>
           <p class="fw" style="font-size:11px;color:var(--muted);margin:0 0 8px 0">Cada miembro puntúa cada idea. La de mayor puntaje se copia automáticamente a Causa Raíz.</p>
           <div class="fw" style="overflow-x:auto;margin-bottom:8px">
@@ -1447,6 +1448,7 @@ function openNewRec() {
   document.getElementById('f-ID_Registro').value=`8D-${yr}-${num}`;
   document.getElementById('f-Folio').value=String(DB.length+1).padStart(3,'0');
   document.getElementById('f-Creado_Por').value=CU.username;
+  document.getElementById('f-Votacion_D4_JSON').value='';
   TOGGLE_KEYS.forEach(k=>setSatBtns(k,''));
   for(let i=1;i<=10;i++){const el=document.getElementById('et-m'+i);if(el)el.value='';}
   resetVotoTable(); updateEquipo();
@@ -1461,10 +1463,11 @@ function openEditRec(id) {
   document.getElementById('rec-modal-title').textContent='Editar Registro';
   COLS.forEach(c=>{const el=document.getElementById('f-'+c.k);if(el)el.value=r[c.k]||'';});
   document.getElementById('f-Creado_Por').value=r.Creado_Por||'';
+  document.getElementById('f-Votacion_D4_JSON').value=r.Votacion_D4_JSON||'';
   TOGGLE_KEYS.forEach(k=>setSatBtns(k,r[k]||''));
   const mems=(r.Equipo_Trabajo||'').split(',').map(s=>s.trim());
   for(let i=1;i<=10;i++){const el=document.getElementById('et-m'+i);if(el)el.value=mems[i-1]||'';}
-  resetVotoTable(); updateEquipo();
+  restoreVotoTable(r.Votacion_D4_JSON); updateEquipo();
   switchTab(0);
   openModal('rec-modal');
 }
@@ -1473,6 +1476,7 @@ function saveRec() {
   const data={};
   COLS.forEach(c=>{const el=document.getElementById('f-'+c.k);data[c.k]=el?el.value:'';});
   data.Creado_Por=document.getElementById('f-Creado_Por').value;
+  data.Votacion_D4_JSON=document.getElementById('f-Votacion_D4_JSON').value;
   if(EDIT_ID){
     const idx=DB.findIndex(r=>r.ID_Registro===EDIT_ID);
     if(idx>=0) DB[idx]={...DB[idx],...data};
@@ -1575,6 +1579,41 @@ function calcVotos() {
   if (causaEl && bestIdea) causaEl.value = bestIdea;
   const pondEl = document.getElementById('f-Ponderacion_Causa');
   if (pondEl && maxTotal > 0) pondEl.value = maxTotal;
+
+  // Persistir la tabla completa (ideas + votos por miembro) para que no se
+  // pierda al editar el registro más adelante.
+  const votoData = [];
+  for (let r = 1; r <= 10; r++) {
+    const idea = (document.getElementById('voto-idea-'+r) || {}).value || '';
+    const votes = [];
+    for (let c = 1; c <= 10; c++) {
+      const inp = document.getElementById('voto-r'+r+'-c'+c);
+      votes.push(inp ? inp.value : '');
+    }
+    votoData.push({ idea, votes });
+  }
+  const votoEl = document.getElementById('f-Votacion_D4_JSON');
+  if (votoEl) votoEl.value = JSON.stringify(votoData);
+}
+
+function restoreVotoTable(jsonStr) {
+  resetVotoTable();
+  if (!jsonStr) return;
+  let data;
+  try { data = JSON.parse(jsonStr); } catch (e) { return; }
+  if (!Array.isArray(data)) return;
+  data.forEach((row, idx) => {
+    const r = idx + 1;
+    if (r > 10) return;
+    const ideaEl = document.getElementById('voto-idea-'+r);
+    if (ideaEl) ideaEl.value = row.idea || '';
+    (row.votes || []).forEach((v, cIdx) => {
+      const c = cIdx + 1;
+      const inp = document.getElementById('voto-r'+r+'-c'+c);
+      if (inp) inp.value = v || '';
+    });
+  });
+  calcVotos();
 }
 
 // ═══════════════════════════════════════════════

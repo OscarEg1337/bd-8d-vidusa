@@ -32,7 +32,7 @@ var HEADERS = [
   'Fecha_D7','D8_Evaluacion_de_efectividad','Fecha_de_revision_D8',
   'Satisfaccion_O_no_SatisfaccionD8','ResidenteD8','SuperintendenteD8',
   'Facilitador_PMO_D8','Jefe_de_Calidad_D8','Estatus_Folio_D8','Fecha_Cierre_D8',
-  'Evidencia_Link_D8','Creado_Por'
+  'Evidencia_Link_D8','Creado_Por','Votacion_D4_JSON'
 ];
 
 // ── SHA-256 hex — solo para comparación de fallback en AUTH ──────
