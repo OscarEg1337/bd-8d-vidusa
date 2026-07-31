@@ -3,6 +3,7 @@
 // CORS is handled automatically by the GAS runtime for public deployments.
 
 var SHEET_NAME          = 'BD_8D';
+var DESPIVOTADA_SHEET_NAME = 'BD_8D_Despivotada';
 var USUARIOS_SHEET_NAME = 'USUARIOS';
 var USUARIOS_HEADERS    = ['username','password','nombre','rol','fraccionamiento'];
 
@@ -104,6 +105,58 @@ function findRowById(sheet, id) {
   return -1;
 }
 
+// ── DESPIVOTAR ──────────────────────────────────────────────────────
+// Genera/actualiza la hoja "BD_8D_Despivotada": una fila por cada Acción
+// Correctiva (1-8) que tenga contenido, con los datos base del folio
+// repetidos — pensada para consumirse en Power BI. Se regenera completa
+// cada vez (no se acumula), así siempre refleja el estado actual de BD_8D.
+var DESPIVOTADA_BASE_FIELDS = [
+  'ID_Registro','Folio','Fraccionamiento','Fecha_Revision','Superintendente',
+  'Residente','Facilitador_BPO','Descripcion_Problema','Accion_Contencion',
+  'Causa_Raiz','Ponderacion_Causa','Estatus_Folio_D6','Estatus_Folio_D8','Creado_Por'
+];
+
+function generarDespivotada() {
+  var sheet = getSheet();
+  var lr = sheet.getLastRow();
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var out = ss.getSheetByName(DESPIVOTADA_SHEET_NAME);
+  if (!out) out = ss.insertSheet(DESPIVOTADA_SHEET_NAME);
+  out.clear();
+
+  var outHeaders = DESPIVOTADA_BASE_FIELDS.concat([
+    'Numero_Accion','Accion_Correctiva','Responsable_Accion',
+    'Fecha_Programada','Fecha_Realizacion','Bitacora_Accion','Fecha_Bitacora'
+  ]);
+
+  var rows = [];
+  if (lr >= 2) {
+    var values = sheet.getRange(2, 1, lr - 1, HEADERS.length).getValues();
+    values.forEach(function(row) {
+      var obj = rowToObj(row);
+      if (!obj.ID_Registro) return;
+      var base = DESPIVOTADA_BASE_FIELDS.map(function(f) { return obj[f] || ''; });
+      for (var n = 1; n <= 8; n++) {
+        var accion = obj['Accion_Correctiva_' + n];
+        if (!accion) continue; // solo acciones con contenido capturado
+        rows.push(base.concat([
+          n,
+          accion,
+          obj['Responsable_Accion_' + n] || '',
+          obj['Fecha_Programada_' + n] || '',
+          obj['Fecha_Realizacion_' + n] || '',
+          obj['Bitacora_Accion_' + n] || '',
+          obj['Fecha_Bitacora_' + n] || ''
+        ]));
+      }
+    });
+  }
+
+  out.getRange(1, 1, 1, outHeaders.length).setValues([outHeaders]);
+  out.setFrozenRows(1);
+  if (rows.length) out.getRange(2, 1, rows.length, outHeaders.length).setValues(rows);
+}
+
 // ── doGet — return all records ────────────────────────────────────
 function doGet(e) {
   try {
@@ -199,6 +252,7 @@ function doPost(e) {
           return body[h] !== undefined ? body[h] : '';
         });
         sheet.appendRow(newRow);
+        generarDespivotada();
         return jsonOut({ status: 'ok', action: 'created', id: idReg, folio: folio });
       } finally {
         lock.releaseLock();
@@ -220,6 +274,7 @@ function doPost(e) {
         return incoming;
       });
       sheet.getRange(rowNum, 1, 1, HEADERS.length).setValues([updRow]);
+      generarDespivotada();
       return jsonOut({ status: 'ok', action: 'updated', id: id });
     }
 
@@ -229,6 +284,7 @@ function doPost(e) {
       var delRow = findRowById(sheet, delId);
       if (delRow === -1) return jsonOut({ status: 'error', message: 'No encontrado: ' + delId });
       sheet.deleteRow(delRow);
+      generarDespivotada();
       return jsonOut({ status: 'ok', action: 'deleted', id: delId });
     }
 
