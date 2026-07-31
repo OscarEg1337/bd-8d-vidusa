@@ -1332,7 +1332,10 @@ function buildRow(r) {
       const sc = val==='Cerrado'?'s-cerrado':val==='En proceso'?'s-proceso':val==='Abierto'?'s-abierto':'';
       content = val?`<span class="sbadge ${sc}">${val}</span>`:'';
     } else if (c.k==='Evidencia_Link_D6'||c.k==='Evidencia_Link_D8') {
-      content = val?`<a href="${esc(val)}" target="_blank" title="${esc(val)}"><i class="fas fa-external-link-alt"></i></a>`:'';
+      const su = safeUrl(val);
+      content = su
+        ? `<a href="${esc(su)}" target="_blank" rel="noopener noreferrer" title="${esc(su)}"><i class="fas fa-external-link-alt"></i></a>`
+        : (val ? esc(val) : '');
     } else {
       content = esc(val);
     }
@@ -1347,6 +1350,11 @@ function buildRow(r) {
 }
 
 function esc(s){if(!s)return '';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+// Solo deja pasar URLs http(s) reales — evita que un valor tipo
+// "javascript:...", "data:...", etc. quede como href de un <a> clickeable
+// (robaría el token de sesión de quien le dé clic).
+function safeUrl(v){ const s=String(v||'').trim(); return /^https?:\/\//i.test(s)?s:''; }
 
 // ═══════════════════════════════════════════════
 // PAGER
