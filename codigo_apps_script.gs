@@ -6,10 +6,12 @@ var SHEET_NAME          = 'BD_8D';
 var USUARIOS_SHEET_NAME = 'USUARIOS';
 var USUARIOS_HEADERS    = ['username','password','nombre','rol','fraccionamiento'];
 
+// Contraseñas semilla ya en hash SHA-256 (admin123 / vidusa2024), no en texto plano.
+// Solo se usan si la hoja USUARIOS se crea desde cero (spreadsheet nuevo).
 var DEFAULT_USERS = [
-  ['admin',       'admin123',  'Administrador',    'Admin',  ''],
-  ['jose_agustin','vidusa2024','José Agustín',     'Editor', ''],
-  ['ramiro',      'vidusa2024','Ramiro Fernández', 'Viewer', ''],
+  ['admin',       '240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9', 'Administrador',    'Admin',  ''],
+  ['jose_agustin','7c613aebe5601b09fe4b806a62d4c765cd0850f166694921f1e3807cebc949b0', 'José Agustín',     'Editor', ''],
+  ['ramiro',      '7c613aebe5601b09fe4b806a62d4c765cd0850f166694921f1e3807cebc949b0', 'Ramiro Fernández', 'Viewer', ''],
 ];
 
 var HEADERS = [
@@ -49,6 +51,53 @@ function sha256Hex(str) {
   }).join('');
 }
 
+// ── TOKEN DE SESIÓN ────────────────────────────────────────────────
+// Firmado con HMAC-SHA256 usando una clave secreta que vive únicamente
+// en las Propiedades del Script (nunca en el código). Sin un token
+// válido y no expirado, ninguna operación (listar, crear, editar,
+// borrar, crear usuario) procede — el login deja de ser solo cosmético.
+var TOKEN_TTL_MS = 12 * 60 * 60 * 1000; // 12 horas
+
+function getTokenSecret() {
+  var props = PropertiesService.getScriptProperties();
+  var secret = props.getProperty('TOKEN_SECRET');
+  if (!secret) {
+    secret = Utilities.getUuid() + Utilities.getUuid();
+    props.setProperty('TOKEN_SECRET', secret);
+  }
+  return secret;
+}
+
+function generarToken(username, role) {
+  var expiry = Date.now() + TOKEN_TTL_MS;
+  var payload = username + '|' + role + '|' + expiry;
+  var payloadB64 = Utilities.base64EncodeWebSafe(payload);
+  var sig = Utilities.computeHmacSha256Signature(payloadB64, getTokenSecret());
+  var sigB64 = Utilities.base64EncodeWebSafe(sig);
+  return payloadB64 + '.' + sigB64;
+}
+
+function validarToken(token) {
+  if (!token || token.indexOf('.') === -1) return null;
+  var parts = token.split('.');
+  var payloadB64 = parts[0], sigB64 = parts[1];
+  var expectedSig = Utilities.base64EncodeWebSafe(
+    Utilities.computeHmacSha256Signature(payloadB64, getTokenSecret())
+  );
+  if (sigB64 !== expectedSig) return null;
+  var payload;
+  try {
+    payload = Utilities.newBlob(Utilities.base64DecodeWebSafe(payloadB64)).getDataAsString();
+  } catch (e) {
+    return null;
+  }
+  var arr = payload.split('|');
+  if (arr.length !== 3) return null;
+  var username = arr[0], role = arr[1], expiry = parseInt(arr[2], 10);
+  if (!expiry || Date.now() > expiry) return null;
+  return { username: username, role: role };
+}
+
 // ── Response helper ───────────────────────────────────────────────
 function jsonOut(data) {
   return ContentService
@@ -75,10 +124,22 @@ function getSheet() {
   var ss    = SpreadsheetApp.getActiveSpreadsheet();
   var sheet = ss.getSheetByName(SHEET_NAME);
   if (!sheet) { sheet = ss.insertSheet(SHEET_NAME); }
+
   if (sheet.getLastRow() === 0) {
+    // Hoja vacía: escribir encabezados
     sheet.appendRow(HEADERS);
     sheet.setFrozenRows(1);
+  } else {
+    // Hoja con datos: verificar si la fila 1 coincide con HEADERS
+    var currentHeaders = sheet.getRange(1, 1, 1, HEADERS.length).getValues()[0];
+    var headersMatch = HEADERS.every(function(h, i) { return currentHeaders[i] === h; });
+    if (!headersMatch) {
+      // Encabezados viejos: reemplazar fila 1 con los nuevos
+      sheet.getRange(1, 1, 1, HEADERS.length).setValues([HEADERS]);
+      sheet.setFrozenRows(1);
+    }
   }
+
   return sheet;
 }
 
@@ -110,6 +171,9 @@ function findRowById(sheet, id) {
 // ── doGet — return all records ────────────────────────────────────
 function doGet(e) {
   try {
+    var sesion = validarToken(e.parameter && e.parameter.token);
+    if (!sesion) return jsonOut({ status: 'error', message: 'Sesión inválida o expirada' });
+
     var sheet   = getSheet();
     var lr      = sheet.getLastRow();
     var records = [];
@@ -150,17 +214,17 @@ function doPost(e) {
         var urow   = urows[i];
         var stored = String(urow[1]);
         if (String(urow[0]).trim() !== uname) continue;
-        // Intento 1: contraseña en texto plano (hoja normal)
-        // Intento 2: hoja tiene hash SHA-256 (sembrada por versión anterior)
         var match = (stored === upass) || (stored === sha256Hex(upass));
         if (match) {
+          var role = String(urow[3]);
           return jsonOut({
             status: 'ok',
             user: {
               username: String(urow[0]).trim(),
               fullname: String(urow[2]),
-              role:     String(urow[3]),
-              fracc:    String(urow[4])
+              role:     role,
+              fracc:    String(urow[4]),
+              token:    generarToken(String(urow[0]).trim(), role)
             }
           });
         }
@@ -172,8 +236,50 @@ function doPost(e) {
     }
   }
 
-  // CRUD operations
+  // ADD_USER: append new user to USUARIOS sheet — solo un Admin autenticado
+  // puede crear usuarios (antes cualquiera con la URL podía crearse un Admin).
+  if (method === 'ADD_USER') {
+    try {
+      var sesionAU = validarToken(body.token);
+      if (!sesionAU) return jsonOut({ status: 'error', message: 'Sesión inválida o expirada' });
+      if (sesionAU.role !== 'Admin') return jsonOut({ status: 'error', message: 'Solo un Admin puede crear usuarios' });
+
+      var newUname  = String(body.username || '').trim();
+      var newUpass  = String(body.password || '').trim();
+      var newNombre = String(body.nombre   || '').trim();
+      var newRol    = String(body.rol      || '').trim();
+      if (!newUname || !newUpass || !newNombre || !newRol) {
+        return jsonOut({ status: 'error', message: 'Todos los campos son requeridos' });
+      }
+      var validRoles = ['Admin', 'Editor', 'Viewer'];
+      if (validRoles.indexOf(newRol) === -1) {
+        return jsonOut({ status: 'error', message: 'Rol inválido. Usa Admin, Editor o Viewer' });
+      }
+      var usheet2 = getUsuariosSheet();
+      var ulr2    = usheet2.getLastRow();
+      if (ulr2 >= 2) {
+        var existing = usheet2.getRange(2, 1, ulr2 - 1, 1).getValues();
+        for (var j = 0; j < existing.length; j++) {
+          if (String(existing[j][0]).trim().toLowerCase() === newUname.toLowerCase()) {
+            return jsonOut({ status: 'error', message: 'El username "' + newUname + '" ya existe' });
+          }
+        }
+      }
+      // Se guarda con hash SHA-256, nunca en texto plano (AUTH ya sabe comparar contra el hash).
+      usheet2.appendRow([newUname, sha256Hex(newUpass), newNombre, newRol, '']);
+      return jsonOut({ status: 'ok', message: 'Usuario creado' });
+    } catch (err) {
+      return jsonOut({ status: 'error', message: err.message });
+    }
+  }
+
+  // CRUD operations — exigen sesión válida (antes cualquiera con la URL del
+  // Web App podía crear/editar/borrar folios sin haberse logueado nunca).
   try {
+    var sesionCrud = validarToken(body.token);
+    if (!sesionCrud) return jsonOut({ status: 'error', message: 'Sesión inválida o expirada' });
+    if (sesionCrud.role === 'Viewer') return jsonOut({ status: 'error', message: 'Tu rol no permite modificar registros' });
+
     var sheet = getSheet();
 
     if (method === 'POST') {

@@ -1008,33 +1008,40 @@ function setSyncState(state) {
 // ═══════════════════════════════════════════════
 // API
 // ═══════════════════════════════════════════════
-function apiPost(payload) {
-  if (!CONFIGURED) return;
-  setSyncState('syncing');
-  fetch(APPS_SCRIPT_URL, {
-    method: 'POST',
-    mode: 'no-cors',
-    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify(payload),
-  })
-  .then(() => setSyncState('ok'))
-  .catch(() => setSyncState('err'));
+// Si el servidor dice que la sesión no es válida (token vencido o alterado),
+// se cierra sesión localmente y se le pide al usuario volver a entrar —
+// en vez de fallar en silencio y que la app parezca no guardar nada.
+function handleSessionError(message) {
+  toast(message || 'Tu sesión expiró. Vuelve a iniciar sesión.', 'er');
+  doLogout();
 }
 
-// Igual que apiPost pero lee la respuesta del servidor — se usa al crear un
-// registro porque el ID_Registro/Folio reales los asigna el servidor (evita
-// que dos usuarios generen el mismo ID desde su copia local desactualizada).
-function apiCreate(payload) {
+function apiPost(payload) {
   if (!CONFIGURED) return Promise.resolve(null);
   setSyncState('syncing');
   return fetch(APPS_SCRIPT_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify(payload),
+    body: JSON.stringify({ ...payload, token: CU ? CU.token : '' }),
   })
   .then(r => r.json())
-  .then(res => { setSyncState('ok'); return res; })
+  .then(res => {
+    setSyncState('ok');
+    if (res.status === 'error' && /sesión/i.test(res.message || '')) {
+      handleSessionError(res.message);
+    } else if (res.status === 'error' && res.message) {
+      toast(res.message, 'er');
+    }
+    return res;
+  })
   .catch(() => { setSyncState('err'); return null; });
+}
+
+// Igual que apiPost pero se usa al crear un registro — el ID_Registro/Folio
+// reales los asigna el servidor (evita que dos usuarios generen el mismo ID
+// desde su copia local desactualizada).
+function apiCreate(payload) {
+  return apiPost(payload);
 }
 
 // ═══════════════════════════════════════════════
@@ -1046,13 +1053,17 @@ function fetchAllRecs() {
   const btn = document.getElementById('btn-refresh');
   if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>'; }
   setSyncState('syncing');
-  fetch(APPS_SCRIPT_URL)
+  const url = APPS_SCRIPT_URL + '?token=' + encodeURIComponent(CU ? CU.token : '');
+  fetch(url)
     .then(r => r.json())
     .then(data => {
       if (data.status === 'ok' && Array.isArray(data.data)) {
         saveCache(data.data);
         refreshDash();
         setSyncState('ok');
+      } else if (/sesión/i.test(data.message || '')) {
+        setSyncState('err');
+        handleSessionError(data.message);
       } else {
         toast('No se pudieron cargar los registros del servidor.', 'er');
         setSyncState('err');
@@ -1696,7 +1707,7 @@ async function addUser() {
     const res  = await fetch(APPS_SCRIPT_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ _method: 'ADD_USER', username, password, nombre, rol }),
+      body: JSON.stringify({ _method: 'ADD_USER', username, password, nombre, rol, token: CU ? CU.token : '' }),
     });
     const data = await res.json();
     if (data.status === 'ok') {
