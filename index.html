@@ -988,6 +988,22 @@ function apiPost(payload) {
   .catch(() => setSyncState('err'));
 }
 
+// Igual que apiPost pero lee la respuesta del servidor — se usa al crear un
+// registro porque el ID_Registro/Folio reales los asigna el servidor (evita
+// que dos usuarios generen el mismo ID desde su copia local desactualizada).
+function apiCreate(payload) {
+  if (!CONFIGURED) return Promise.resolve(null);
+  setSyncState('syncing');
+  return fetch(APPS_SCRIPT_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify(payload),
+  })
+  .then(r => r.json())
+  .then(res => { setSyncState('ok'); return res; })
+  .catch(() => { setSyncState('err'); return null; });
+}
+
 // ═══════════════════════════════════════════════
 // LOAD RECORDS
 // ═══════════════════════════════════════════════
@@ -1462,14 +1478,27 @@ function saveRec() {
     if(idx>=0) DB[idx]={...DB[idx],...data};
     apiPost({_method:'PUT',...data});
     toast('Registro actualizado');
+    saveCache(DB);
+    closeModal('rec-modal');
+    refreshDash();
   } else {
+    const tempId=data.ID_Registro;
     DB.push(data);
-    apiPost(data);
+    saveCache(DB);
+    closeModal('rec-modal');
+    refreshDash();
     toast('Registro creado');
+    apiCreate(data).then(res=>{
+      if(res && res.status==='ok' && res.id){
+        const idx=DB.findIndex(r=>r.ID_Registro===tempId);
+        if(idx>=0){ DB[idx].ID_Registro=res.id; DB[idx].Folio=res.folio||DB[idx].Folio; }
+        saveCache(DB);
+        refreshDash();
+      } else {
+        toast('No se pudo confirmar el folio con el servidor. Actualiza la página.', 'er');
+      }
+    });
   }
-  saveCache(DB);
-  closeModal('rec-modal');
-  refreshDash();
 }
 
 // ═══════════════════════════════════════════════

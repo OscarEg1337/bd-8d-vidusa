@@ -211,10 +211,35 @@ function doPost(e) {
     var sheet = getSheet();
 
     if (method === 'POST') {
-      if (!body.ID_Registro) return jsonOut({ status: 'error', message: 'ID_Registro requerido' });
-      var newRow = HEADERS.map(function(h) { return body[h] !== undefined ? body[h] : ''; });
-      sheet.appendRow(newRow);
-      return jsonOut({ status: 'ok', action: 'created', id: body.ID_Registro });
+      // El ID_Registro/Folio se asignan aquí bajo lock, no se confía en lo que
+      // manda el navegador: si dos usuarios crean un registro casi al mismo tiempo,
+      // cada uno con su propia copia local desactualizada, ambos podrían calcular
+      // el mismo número y terminar con dos filas con el mismo ID_Registro.
+      var lock = LockService.getScriptLock();
+      lock.waitLock(15000);
+      try {
+        var lr2 = sheet.getLastRow();
+        var existingIds = lr2 >= 2
+          ? sheet.getRange(2, 1, lr2 - 1, 1).getValues().map(function(row) { return String(row[0]); })
+          : [];
+        var yr = new Date().getFullYear();
+        var n = lr2;
+        var folio, idReg;
+        do {
+          folio = String(n).padStart(3, '0');
+          idReg = '8D-' + yr + '-' + folio;
+          n++;
+        } while (existingIds.indexOf(idReg) !== -1);
+        var newRow = HEADERS.map(function(h) {
+          if (h === 'ID_Registro') return idReg;
+          if (h === 'Folio') return folio;
+          return body[h] !== undefined ? body[h] : '';
+        });
+        sheet.appendRow(newRow);
+        return jsonOut({ status: 'ok', action: 'created', id: idReg, folio: folio });
+      } finally {
+        lock.releaseLock();
+      }
     }
 
     if (method === 'PUT') {
@@ -248,5 +273,50 @@ function doPost(e) {
 
   } catch (err) {
     return jsonOut({ status: 'error', message: err.message });
+  }
+}
+
+// ── MANTENIMIENTO: ejecutar UNA VEZ manualmente desde el editor de Apps ────
+// Script (seleccionar esta función en el desplegable de arriba → Ejecutar)
+// para corregir folios que hayan quedado con el mismo ID_Registro duplicado
+// (causa de que al editar un folio se abrieran los datos de otro).
+function repararIdsDuplicados() {
+  var sheet = getSheet();
+  var lr = sheet.getLastRow();
+  if (lr < 2) { Logger.log('Sin registros.'); return; }
+
+  var range = sheet.getRange(2, 1, lr - 1, 2); // columnas ID_Registro, Folio
+  var values = range.getValues();
+  var yr = new Date().getFullYear();
+
+  var maxNum = 0;
+  values.forEach(function(row) {
+    var m = String(row[0]).match(/(\d+)$/);
+    if (m) maxNum = Math.max(maxNum, parseInt(m[1], 10));
+  });
+
+  var seen = {};
+  var changed = false;
+  for (var i = 0; i < values.length; i++) {
+    var id = String(values[i][0]);
+    if (!id) continue;
+    if (seen[id]) {
+      maxNum++;
+      var newFolio = String(maxNum).padStart(3, '0');
+      var newId = '8D-' + yr + '-' + newFolio;
+      Logger.log('Duplicado: fila ' + (i + 2) + ' tenía ' + id + ' → reasignado a ' + newId);
+      values[i][0] = newId;
+      values[i][1] = newFolio;
+      changed = true;
+    } else {
+      seen[id] = true;
+    }
+  }
+
+  if (changed) {
+    range.setValues(values);
+    Logger.log('Listo: se corrigieron IDs duplicados. Revisa el registro de ejecución arriba.');
+  } else {
+    Logger.log('No se encontraron IDs duplicados.');
   }
 }
