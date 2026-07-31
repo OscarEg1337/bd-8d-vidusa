@@ -181,7 +181,15 @@ function doPost(e) {
       if (!id) return jsonOut({ status: 'error', message: 'ID_Registro requerido' });
       var rowNum = findRowById(sheet, id);
       if (rowNum === -1) return jsonOut({ status: 'error', message: 'No encontrado: ' + id });
-      var updRow = HEADERS.map(function(h) { return body[h] !== undefined ? body[h] : ''; });
+      // Merge: si el valor entrante viene vacío/indefinido pero la hoja ya tiene un dato
+      // guardado (p.ej. otro usuario lo capturó después de que este cliente cargó el registro),
+      // se conserva el valor existente en vez de borrarlo con una cadena vacía.
+      var currentRow = sheet.getRange(rowNum, 1, 1, HEADERS.length).getValues()[0];
+      var updRow = HEADERS.map(function(h, i) {
+        var incoming = body[h];
+        if (incoming === undefined || incoming === '') return currentRow[i];
+        return incoming;
+      });
       sheet.getRange(rowNum, 1, 1, HEADERS.length).setValues([updRow]);
       return jsonOut({ status: 'ok', action: 'updated', id: id });
     }

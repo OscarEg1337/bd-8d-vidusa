@@ -506,6 +506,9 @@ th.f3{min-width:160px;width:160px}
             <div class="fgroup"><label>Superintendente</label>
               <select id="dg-super" onchange="doSearch()"><option value="">Todos</option></select>
             </div>
+            <div class="fgroup"><label>Facilitador</label>
+              <select id="dg-facilitador" onchange="doSearch()"><option value="">Todos</option></select>
+            </div>
           </div>
           <button class="btn btn-sec" onclick="clearDashFilter()"><i class="fas fa-times"></i> Limpiar</button>
         </div>
@@ -523,12 +526,13 @@ th.f3{min-width:160px;width:160px}
             <div class="fgroup"><label>Fraccionamiento</label>
               <select id="ff-fracc" onchange="doFilter()">
                 <option value="">Todos</option>
-                <option>Arbados Marquesa</option><option>Almendros</option><option>Puerta Jardin</option>
-                <option>San Manuel III</option><option>Los Linos</option><option>Pilares Antares</option>
-                <option>Haciendas</option><option>Villa de Palmanova</option><option>Adara</option>
-                <option>Porto Bello</option><option>Alcazar</option><option>Altavia</option>
-                <option>Amira</option><option>Magnolias</option><option>Puerta Oriente</option>
-                <option>Valle Real II</option><option>Privada Alberta</option><option>Fuentes de Juarez</option>
+                <option>Adara</option><option>Alcazar</option><option>Almendros</option>
+                <option>Altavia</option><option>Amira</option><option>Arbados Marquesa</option>
+                <option>Fuentes de Juarez</option><option>Haciendas</option><option>Lincoln Poniente</option>
+                <option>Los Linos</option><option>Magnolias</option><option>Pilares Antares</option>
+                <option>Porto Bello</option><option>Privada Alberta</option><option>Puerta Jardin</option>
+                <option>Puerta Oriente</option><option>San Manuel III</option><option>Valle Real II</option>
+                <option>Villa de Palmanova</option>
               </select>
             </div>
             <div class="fgroup"><label>Superintendente</label><input id="ff-super" type="text" placeholder="Nombre del superintendente" oninput="doFilter()" /></div>
@@ -555,12 +559,13 @@ th.f3{min-width:160px;width:160px}
             <div class="fgroup"><label>Fraccionamiento</label>
               <select id="rf-fracc" onchange="renderResumen()">
                 <option value="">Todos</option>
-                <option>Arbados Marquesa</option><option>Almendros</option><option>Puerta Jardin</option>
-                <option>San Manuel III</option><option>Los Linos</option><option>Pilares Antares</option>
-                <option>Haciendas</option><option>Villa de Palmanova</option><option>Adara</option>
-                <option>Porto Bello</option><option>Alcazar</option><option>Altavia</option>
-                <option>Amira</option><option>Magnolias</option><option>Puerta Oriente</option>
-                <option>Valle Real II</option><option>Privada Alberta</option><option>Fuentes de Juarez</option>
+                <option>Adara</option><option>Alcazar</option><option>Almendros</option>
+                <option>Altavia</option><option>Amira</option><option>Arbados Marquesa</option>
+                <option>Fuentes de Juarez</option><option>Haciendas</option><option>Lincoln Poniente</option>
+                <option>Los Linos</option><option>Magnolias</option><option>Pilares Antares</option>
+                <option>Porto Bello</option><option>Privada Alberta</option><option>Puerta Jardin</option>
+                <option>Puerta Oriente</option><option>San Manuel III</option><option>Valle Real II</option>
+                <option>Villa de Palmanova</option>
               </select>
             </div>
           </div>
@@ -624,31 +629,32 @@ th.f3{min-width:160px;width:160px}
           <div class="fgroup"><label>Fraccionamiento</label>
             <select id="f-Fraccionamiento">
               <option value="">-- Seleccionar --</option>
-              <option>Arbados Marquesa</option><option>Almendros</option><option>Puerta Jardin</option>
-              <option>San Manuel III</option><option>Los Linos</option><option>Pilares Antares</option>
-              <option>Haciendas</option><option>Villa de Palmanova</option><option>Adara</option>
-              <option>Porto Bello</option><option>Alcazar</option><option>Altavia</option>
-              <option>Amira</option><option>Magnolias</option><option>Puerta Oriente</option>
-              <option>Valle Real II</option><option>Privada Alberta</option><option>Fuentes de Juarez</option>
+              <option>Adara</option><option>Alcazar</option><option>Almendros</option>
+              <option>Altavia</option><option>Amira</option><option>Arbados Marquesa</option>
+              <option>Fuentes de Juarez</option><option>Haciendas</option><option>Lincoln Poniente</option>
+              <option>Los Linos</option><option>Magnolias</option><option>Pilares Antares</option>
+              <option>Porto Bello</option><option>Privada Alberta</option><option>Puerta Jardin</option>
+              <option>Puerta Oriente</option><option>San Manuel III</option><option>Valle Real II</option>
+              <option>Villa de Palmanova</option>
             </select>
           </div>
           <div class="fgroup"><label>Fecha Revisión</label><input id="f-Fecha_Revision" type="date" /></div>
           <div class="fgroup"><label>Superintendente</label>
             <select id="f-Superintendente">
               <option value="">-- Seleccionar --</option>
-              <option>Reynaldo Zavala</option><option>Jorge Licea</option><option>Hugo Martinez</option>
-              <option>Sebastian Hernandez</option><option>Ramiro Fernandez</option>
+              <option>Hugo Martinez</option><option>Jorge Licea</option><option>Ramiro Fernandez</option>
+              <option>Reynaldo Zavala</option><option>Sebastian Hernandez</option>
             </select>
           </div>
           <div class="fgroup"><label>Residente</label><input id="f-Residente" /></div>
           <div class="fgroup"><label>Facilitador PMO</label>
             <select id="f-Facilitador_BPO">
               <option value="">-- Seleccionar --</option>
-              <option>Rosalba Pecina</option><option>Erik Calderon</option><option>Julio Esquivel</option>
-              <option>Joel Rodriguez</option><option>Jose Juan Eggermont</option><option>Yolanda Rangel</option>
-              <option>Natalia Escalera</option><option>Carlos Torres</option><option>Carlos Ramirez</option>
-              <option>Aldo Rodriguez</option><option>Cesar de la Rosa</option>
-              <option>Felipe Carrillo</option><option>Jose Lopez</option>
+              <option>Aldo Rodriguez</option><option>Carlos Ramirez</option><option>Carlos Torres</option>
+              <option>Cesar de la Rosa</option><option>Erik Calderon</option><option>Felipe Carrillo</option>
+              <option>Joel Rodriguez</option><option>Jose Juan Eggermont</option><option>Jose Lopez</option>
+              <option>Julio Esquivel</option><option>Natalia Escalera</option><option>Rosalba Pecina</option>
+              <option>Yolanda Rangel</option>
             </select>
           </div>
           <div class="fw" style="font-size:11px;font-weight:700;text-transform:uppercase;color:#28534E;border-bottom:1px solid #98C894;padding-bottom:4px;margin:8px 0;letter-spacing:.6px">Equipo de Trabajo — Miembros</div>
@@ -1194,10 +1200,12 @@ function refreshDash() {
   const fracc = document.getElementById('dg-fracc').value;
   const est = document.getElementById('dg-est').value;
   const sup = document.getElementById('dg-super').value;
+  const facil = document.getElementById('dg-facilitador').value;
   if (q) FILT = FILT.filter(r=>COLS.some(c=>String(r[c.k]||'').toLowerCase().includes(q)));
   if (fracc) FILT = FILT.filter(r=>r.Fraccionamiento===fracc);
   if (est) FILT = FILT.filter(r=>r.Estatus_Folio_D8===est||r.Estatus_Folio_D6===est);
   if (sup) FILT = FILT.filter(r=>r.Superintendente===sup);
+  if (facil) FILT = FILT.filter(r=>r.Facilitador_BPO===facil);
   PAGE = 1;
   renderTable();
   updateKPIs();
@@ -1209,6 +1217,7 @@ function clearDashFilter() {
   document.getElementById('dg-fracc').value='';
   document.getElementById('dg-est').value='';
   document.getElementById('dg-super').value='';
+  document.getElementById('dg-facilitador').value='';
   document.getElementById('gsearch').value='';
   refreshDash();
 }
@@ -1224,6 +1233,7 @@ function populateDashFilters() {
   };
   fill('dg-fracc', 'Fraccionamiento');
   fill('dg-super', 'Superintendente');
+  fill('dg-facilitador', 'Facilitador_BPO');
 }
 
 function renderTable() {
