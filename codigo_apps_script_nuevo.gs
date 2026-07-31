@@ -56,7 +56,7 @@ function sha256Hex(str) {
 // en las Propiedades del Script (nunca en el código). Sin un token
 // válido y no expirado, ninguna operación (listar, crear, editar,
 // borrar, crear usuario) procede — el login deja de ser solo cosmético.
-var TOKEN_TTL_MS = 12 * 60 * 60 * 1000; // 12 horas
+var TOKEN_TTL_MS = 3 * 60 * 60 * 1000; // 3 horas — si un token se filtrara, la ventana de riesgo es corta
 
 function getTokenSecret() {
   var props = PropertiesService.getScriptProperties();
@@ -96,6 +96,30 @@ function validarToken(token) {
   var username = arr[0], role = arr[1], expiry = parseInt(arr[2], 10);
   if (!expiry || Date.now() > expiry) return null;
   return { username: username, role: role };
+}
+
+// ── PROTECCIÓN CONTRA FUERZA BRUTA EN EL LOGIN ─────────────────────
+// Tras varios intentos fallidos con el mismo username, se bloquea
+// temporalmente (sin importar si la contraseña es correcta) para que
+// probar contraseñas al azar deje de ser práctico.
+var LOGIN_MAX_INTENTOS      = 5;
+var LOGIN_BLOQUEO_SEGUNDOS  = 300; // 5 minutos
+
+function loginBloqueado(username) {
+  var cache = CacheService.getScriptCache();
+  var count = parseInt(cache.get('loginfail_' + username.toLowerCase()) || '0', 10);
+  return count >= LOGIN_MAX_INTENTOS;
+}
+
+function registrarLoginFallido(username) {
+  var cache = CacheService.getScriptCache();
+  var key = 'loginfail_' + username.toLowerCase();
+  var count = parseInt(cache.get(key) || '0', 10) + 1;
+  cache.put(key, String(count), LOGIN_BLOQUEO_SEGUNDOS);
+}
+
+function limpiarLoginFallido(username) {
+  CacheService.getScriptCache().remove('loginfail_' + username.toLowerCase());
 }
 
 // ── Response helper ───────────────────────────────────────────────
@@ -206,6 +230,11 @@ function doPost(e) {
     try {
       var uname  = String(body.username || '').trim();
       var upass  = String(body.password || '');
+
+      if (loginBloqueado(uname)) {
+        return jsonOut({ status: 'error', message: 'Demasiados intentos fallidos. Espera unos minutos e intenta de nuevo.' });
+      }
+
       var usheet = getUsuariosSheet();
       var ulr    = usheet.getLastRow();
       if (ulr < 2) return jsonOut({ status: 'error', message: 'Sin usuarios registrados' });
@@ -216,6 +245,7 @@ function doPost(e) {
         if (String(urow[0]).trim() !== uname) continue;
         var match = (stored === upass) || (stored === sha256Hex(upass));
         if (match) {
+          limpiarLoginFallido(uname);
           var role = String(urow[3]);
           return jsonOut({
             status: 'ok',
@@ -228,8 +258,10 @@ function doPost(e) {
             }
           });
         }
+        registrarLoginFallido(uname);
         return jsonOut({ status: 'error', message: 'Usuario o contraseña incorrectos' });
       }
+      registrarLoginFallido(uname);
       return jsonOut({ status: 'error', message: 'Usuario o contraseña incorrectos' });
     } catch (err) {
       return jsonOut({ status: 'error', message: err.message });
