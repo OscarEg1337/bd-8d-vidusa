@@ -355,6 +355,12 @@ function doPost(e) {
       // guardado (p.ej. otro usuario lo capturó después de que este cliente cargó el registro),
       // se conserva el valor existente en vez de borrarlo con una cadena vacía.
       var currentRow = sheet.getRange(rowNum, 1, 1, HEADERS.length).getValues()[0];
+      // Solo el dueño (Creado_Por) o un Admin pueden editar — igual que en el
+      // frontend, un folio sin dueño ya no es editable por cualquiera.
+      var duenoPut = String(currentRow[HEADERS.indexOf('Creado_Por')] || '');
+      if (sesionCrud.role !== 'Admin' && duenoPut !== sesionCrud.username) {
+        return jsonOut({ status: 'error', message: 'Solo el dueño del folio o un Admin puede editarlo' });
+      }
       var updRow = HEADERS.map(function(h, i) {
         var incoming = body[h];
         if (incoming === undefined || incoming === '') return currentRow[i];
@@ -365,6 +371,10 @@ function doPost(e) {
     }
 
     if (method === 'DELETE') {
+      // Borrar solo lo puede hacer un Admin (igual que ya restringía la UI).
+      if (sesionCrud.role !== 'Admin') {
+        return jsonOut({ status: 'error', message: 'Solo un Admin puede eliminar registros' });
+      }
       var delId = body.ID_Registro;
       if (!delId) return jsonOut({ status: 'error', message: 'ID_Registro requerido' });
       var delRow = findRowById(sheet, delId);

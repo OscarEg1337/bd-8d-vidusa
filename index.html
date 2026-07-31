@@ -669,7 +669,10 @@ th.f3{min-width:160px;width:160px}
           <div class="fgroup"><label>Miembro 9</label><input id="et-m9" placeholder="Nombre completo" oninput="updateEquipo()" /></div>
           <div class="fgroup"><label>Miembro 10</label><input id="et-m10" placeholder="Nombre completo" oninput="updateEquipo()" /></div>
           <input type="hidden" id="f-Equipo_Trabajo" />
-          <input type="hidden" id="f-Creado_Por" />
+          <div class="fgroup" id="wrap-creado-por" style="display:none">
+            <label>Creado Por (dueño del folio — solo Admin)</label>
+            <input id="f-Creado_Por" placeholder="username del dueño" />
+          </div>
           <input type="hidden" id="f-Votacion_D4_JSON" />
           <div class="fw" style="font-size:11px;font-weight:700;text-transform:uppercase;color:#28534E;border-bottom:1px solid #98C894;padding-bottom:4px;margin:16px 0 4px 0;letter-spacing:.6px">Tabla de Votación — D4 Causas Raíz</div>
           <p class="fw" style="font-size:11px;color:var(--muted);margin:0 0 8px 0">Cada miembro puntúa cada idea. La de mayor puntaje se copia automáticamente a Causa Raíz.</p>
@@ -1309,11 +1312,11 @@ function renderTable() {
 // ═══════════════════════════════════════════════
 function buildRow(r) {
   const isAdmin  = (CU.role||'').toLowerCase() === 'admin';
-  const isViewer = (CU.role||'').toLowerCase() === 'viewer';
   const isOwner  = r.Creado_Por === CU.username;
-  const canEdit  = isAdmin
-    || isOwner
-    || (!isViewer && !r.Creado_Por);
+  // Solo el dueño (Creado_Por) o un Admin pueden editar/borrar un folio.
+  // Los huérfanos sin dueño (folios viejos migrados) los tiene que
+  // reclamar un Admin desde el campo "Creado Por" del formulario.
+  const canEdit  = isAdmin || isOwner;
 
   const cells = COLS.map((c,i) => {
     let cls='',style='';
@@ -1499,6 +1502,7 @@ function openNewRec() {
   document.getElementById('f-ID_Registro').value=`8D-${yr}-${num}`;
   document.getElementById('f-Folio').value=String(DB.length+1).padStart(3,'0');
   document.getElementById('f-Creado_Por').value=CU.username;
+  document.getElementById('wrap-creado-por').style.display=(CU.role||'').toLowerCase()==='admin'?'':'none';
   document.getElementById('f-Votacion_D4_JSON').value='';
   TOGGLE_KEYS.forEach(k=>setSatBtns(k,''));
   for(let i=1;i<=10;i++){const el=document.getElementById('et-m'+i);if(el)el.value='';}
@@ -1514,6 +1518,7 @@ function openEditRec(id) {
   document.getElementById('rec-modal-title').textContent='Editar Registro';
   COLS.forEach(c=>{const el=document.getElementById('f-'+c.k);if(el)el.value=r[c.k]||'';});
   document.getElementById('f-Creado_Por').value=r.Creado_Por||'';
+  document.getElementById('wrap-creado-por').style.display=(CU.role||'').toLowerCase()==='admin'?'':'none';
   document.getElementById('f-Votacion_D4_JSON').value=r.Votacion_D4_JSON||'';
   TOGGLE_KEYS.forEach(k=>setSatBtns(k,r[k]||''));
   const mems=(r.Equipo_Trabajo||'').split(',').map(s=>s.trim());
