@@ -1119,7 +1119,7 @@ async function doLogin() {
       localStorage.setItem('v_sess', JSON.stringify(data.user));
       bootApp();
     } else {
-      lerr.innerHTML = '<i class="fas fa-exclamation-circle"></i> Usuario o contraseña incorrectos';
+      lerr.innerHTML = '<i class="fas fa-exclamation-circle"></i> ' + esc(data.message || 'Usuario o contraseña incorrectos');
       lerr.style.display = 'block';
     }
   } catch (err) {
@@ -1785,7 +1785,9 @@ function toast(msg,type='ok'){
   const c=document.getElementById('toasts');
   const d=document.createElement('div');
   d.className='toast '+type;
-  d.innerHTML=`<i class="fas fa-${type==='ok'?'check-circle':'exclamation-circle'}" style="color:${type==='ok'?'var(--accent)':'var(--err-tx)'}"></i> ${msg}`;
+  // esc() por defensa en profundidad: algunos mensajes vienen del servidor
+  // (p.ej. errores que repiten un valor que mandó el propio navegador).
+  d.innerHTML=`<i class="fas fa-${type==='ok'?'check-circle':'exclamation-circle'}" style="color:${type==='ok'?'var(--accent)':'var(--err-tx)'}"></i> ${esc(msg)}`;
   c.appendChild(d);
   setTimeout(()=>d.remove(),3500);
 }
