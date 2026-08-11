@@ -5,6 +5,8 @@
 var SHEET_NAME          = 'BD_8D';
 var USUARIOS_SHEET_NAME = 'USUARIOS';
 var USUARIOS_HEADERS    = ['username','password','nombre','rol','fraccionamiento'];
+var BITACORA_SHEET_NAME = 'BITACORA';
+var BITACORA_HEADERS    = ['Fecha', 'Usuario', 'Accion', 'ID_Registro', 'Detalle'];
 
 // Contraseñas semilla ya en hash SHA-256 (admin123 / vidusa2024), no en texto plano.
 // Solo se usan si la hoja USUARIOS se crea desde cero (spreadsheet nuevo).
@@ -144,6 +146,30 @@ function getUsuariosSheet() {
   return sheet;
 }
 
+// Registro de auditoría: quién creó/editó/borró cada folio y cuándo — no
+// existía antes, así que solo cubre lo que pase de aquí en adelante (no
+// se puede reconstruir el historial de folios ya creados).
+function getBitacoraSheet() {
+  var ss    = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName(BITACORA_SHEET_NAME);
+  if (!sheet) {
+    sheet = ss.insertSheet(BITACORA_SHEET_NAME);
+    sheet.appendRow(BITACORA_HEADERS);
+    sheet.setFrozenRows(1);
+  }
+  return sheet;
+}
+
+function registrarBitacora(usuario, accion, idRegistro, detalle) {
+  try {
+    getBitacoraSheet().appendRow([new Date(), usuario, accion, idRegistro, detalle || '']);
+  } catch (err) {
+    // Un fallo al registrar la bitácora no debe tumbar la operación real
+    // (crear/editar/borrar) que sí importa que se complete.
+    Logger.log('No se pudo registrar en Bitácora: ' + err.message);
+  }
+}
+
 function getSheet() {
   var ss    = SpreadsheetApp.getActiveSpreadsheet();
   var sheet = ss.getSheetByName(SHEET_NAME);
@@ -197,6 +223,30 @@ function doGet(e) {
   try {
     var sesion = validarToken(e.parameter && e.parameter.token);
     if (!sesion) return jsonOut({ status: 'error', message: 'Sesión inválida o expirada' });
+
+    // ?bitacora=1 — historial de quién creó/editó/borró cada folio. Solo
+    // Admin, igual que la Bitácora de DTUs.
+    if (e.parameter && e.parameter.bitacora === '1') {
+      if (sesion.role !== 'Admin') return jsonOut({ status: 'error', message: 'Solo un Admin puede ver la Bitácora' });
+      var bsheet = getBitacoraSheet();
+      var blr    = bsheet.getLastRow();
+      var entradas = [];
+      if (blr >= 2) {
+        var bvalues = bsheet.getRange(2, 1, blr - 1, BITACORA_HEADERS.length).getValues();
+        var tz = SpreadsheetApp.getActiveSpreadsheet().getSpreadsheetTimeZone();
+        for (var bi = bvalues.length - 1; bi >= 0; bi--) { // mas reciente primero
+          var brow = bvalues[bi];
+          entradas.push({
+            Fecha: brow[0] instanceof Date ? Utilities.formatDate(brow[0], tz, 'yyyy-MM-dd HH:mm') : String(brow[0]),
+            Usuario: String(brow[1]),
+            Accion: String(brow[2]),
+            ID_Registro: String(brow[3]),
+            Detalle: String(brow[4] || ''),
+          });
+        }
+      }
+      return jsonOut({ status: 'ok', data: entradas });
+    }
 
     var sheet   = getSheet();
     var lr      = sheet.getLastRow();
@@ -340,6 +390,7 @@ function doPost(e) {
           return body[h] !== undefined ? body[h] : '';
         });
         sheet.appendRow(newRow);
+        registrarBitacora(sesionCrud.username, 'Crear', idReg, 'Fraccionamiento: ' + (body.Fraccionamiento || '—'));
         return jsonOut({ status: 'ok', action: 'created', id: idReg, folio: folio });
       } finally {
         lock.releaseLock();
@@ -367,6 +418,7 @@ function doPost(e) {
         return incoming;
       });
       sheet.getRange(rowNum, 1, 1, HEADERS.length).setValues([updRow]);
+      registrarBitacora(sesionCrud.username, 'Editar', id, '');
       return jsonOut({ status: 'ok', action: 'updated', id: id });
     }
 
@@ -380,6 +432,7 @@ function doPost(e) {
       var delRow = findRowById(sheet, delId);
       if (delRow === -1) return jsonOut({ status: 'error', message: 'No encontrado: ' + delId });
       sheet.deleteRow(delRow);
+      registrarBitacora(sesionCrud.username, 'Eliminar', delId, '');
       return jsonOut({ status: 'ok', action: 'deleted', id: delId });
     }
 
