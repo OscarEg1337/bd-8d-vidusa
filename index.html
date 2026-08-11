@@ -1090,6 +1090,9 @@ const PZ = 25;
 let FILT = [];
 let EDIT_ID = null;
 let CONF_CB = null;
+// Folios recién creados cuyo ID todavía es un "adivinado" del navegador,
+// pendiente de que el servidor confirme el ID real (ver saveRec).
+const PENDING_IDS = new Set();
 
 // ═══════════════════════════════════════════════
 // AUTH
@@ -1312,11 +1315,15 @@ function renderTable() {
 // ═══════════════════════════════════════════════
 function buildRow(r) {
   const isAdmin  = (CU.role||'').toLowerCase() === 'admin';
-  const isOwner  = r.Creado_Por === CU.username;
+  // Trim por si acaso — el username y el Creado_Por deberían llegar ya
+  // limpios, pero un folio editado directo en el Sheet (fuera de la app)
+  // puede traer espacios de más y romper esta comparación exacta.
+  const isOwner  = String(r.Creado_Por||'').trim() === String(CU.username||'').trim();
   // Solo el dueño (Creado_Por) o un Admin pueden editar/borrar un folio.
   // Los huérfanos sin dueño (folios viejos migrados) los tiene que
   // reclamar un Admin desde el campo "Creado Por" del formulario.
-  const canEdit  = isAdmin || isOwner;
+  const pendiente = PENDING_IDS.has(r.ID_Registro);
+  const canEdit  = (isAdmin || isOwner) && !pendiente;
 
   const cells = COLS.map((c,i) => {
     let cls='',style='';
@@ -1346,8 +1353,12 @@ function buildRow(r) {
   }).join('');
 
   let acts = '';
-  if (canEdit) acts+=`<button class="bicon bicon-edit" onclick="openEditRec('${esc(r.ID_Registro)}')" title="Editar"><i class="fas fa-edit"></i></button>`;
-  if ((CU.role||'').toLowerCase()==='admin') acts+=`<button class="bicon bicon-del" onclick="deleteRec('${esc(r.ID_Registro)}')" title="Eliminar"><i class="fas fa-trash"></i></button>`;
+  if (canEdit) {
+    acts+=`<button class="bicon bicon-edit" onclick="openEditRec('${esc(r.ID_Registro)}')" title="Editar"><i class="fas fa-edit"></i></button>`;
+  } else if ((isAdmin || isOwner) && pendiente) {
+    acts+=`<i class="fas fa-spinner fa-spin" title="Guardando folio, espera un momento antes de editar..." style="color:var(--muted);padding:6px"></i>`;
+  }
+  if ((CU.role||'').toLowerCase()==='admin' && !pendiente) acts+=`<button class="bicon bicon-del" onclick="deleteRec('${esc(r.ID_Registro)}')" title="Eliminar"><i class="fas fa-trash"></i></button>`;
 
   return `<tr>${cells}<td><div style="display:flex;gap:5px">${acts}</div></td></tr>`;
 }
@@ -1543,12 +1554,21 @@ function saveRec() {
     refreshDash();
   } else {
     const tempId=data.ID_Registro;
+    // El ID_Registro que se ve aquí es un folio "adivinado" por el
+    // navegador (para no hacer esperar al usuario) — el servidor asigna
+    // el ID real y puede no coincidir si alguien más creó un folio casi
+    // al mismo tiempo. Mientras no se confirme, se bloquea Editar en ese
+    // folio: antes se podía dar clic a Editar con el ID adivinado, el
+    // servidor no lo encontraba ("No encontrado: ...") y el usuario no
+    // dueño/admin lo interpretaba como "no puedo editar mi propio folio".
+    PENDING_IDS.add(tempId);
     DB.push(data);
     saveCache(DB);
     closeModal('rec-modal');
     refreshDash();
     toast('Registro creado');
     apiCreate(data).then(res=>{
+      PENDING_IDS.delete(tempId);
       if(res && res.status==='ok' && res.id){
         const idx=DB.findIndex(r=>r.ID_Registro===tempId);
         if(idx>=0){ DB[idx].ID_Registro=res.id; DB[idx].Folio=res.folio||DB[idx].Folio; }
