@@ -1330,11 +1330,15 @@ function buildRow(r) {
   // limpios, pero un folio editado directo en el Sheet (fuera de la app)
   // puede traer espacios de más y romper esta comparación exacta.
   const isOwner  = String(r.Creado_Por||'').trim() === String(CU.username||'').trim();
-  // Solo el dueño (Creado_Por) o un Admin pueden editar/borrar un folio.
-  // Los huérfanos sin dueño (folios viejos migrados) los tiene que
-  // reclamar un Admin desde el campo "Creado Por" del formulario.
+  // Excepción: el Facilitador PMO asignado al folio también puede
+  // editarlo aunque no lo haya creado él — muchos folios los captura un
+  // compañero por el Facilitador real.
+  const esFacilitadorAsignado = !!CU.facilitadorPmo && String(r.Facilitador_BPO||'').trim() === String(CU.facilitadorPmo||'').trim();
+  // Solo el dueño (Creado_Por), el Facilitador asignado, o un Admin pueden
+  // editar/borrar un folio. Los huérfanos sin dueño (folios viejos
+  // migrados) los tiene que reclamar un Admin desde "Creado Por".
   const pendiente = PENDING_IDS.has(r.ID_Registro);
-  const canEdit  = (isAdmin || isOwner) && !pendiente;
+  const canEdit  = (isAdmin || isOwner || esFacilitadorAsignado) && !pendiente;
 
   const cells = COLS.map((c,i) => {
     let cls='',style='';
@@ -1366,7 +1370,7 @@ function buildRow(r) {
   let acts = '';
   if (canEdit) {
     acts+=`<button class="bicon bicon-edit" onclick="openEditRec('${esc(r.ID_Registro)}')" title="Editar"><i class="fas fa-edit"></i></button>`;
-  } else if ((isAdmin || isOwner) && pendiente) {
+  } else if ((isAdmin || isOwner || esFacilitadorAsignado) && pendiente) {
     acts+=`<i class="fas fa-spinner fa-spin" title="Guardando folio, espera un momento antes de editar..." style="color:var(--muted);padding:6px"></i>`;
   }
   if ((CU.role||'').toLowerCase()==='admin' && !pendiente) acts+=`<button class="bicon bicon-del" onclick="deleteRec('${esc(r.ID_Registro)}')" title="Eliminar"><i class="fas fa-trash"></i></button>`;

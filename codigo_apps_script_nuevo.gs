@@ -4,16 +4,20 @@
 
 var SHEET_NAME          = 'BD_8D';
 var USUARIOS_SHEET_NAME = 'USUARIOS';
-var USUARIOS_HEADERS    = ['username','password','nombre','rol','fraccionamiento'];
+// facilitador_pmo: el nombre EXACTO tal como aparece en el select
+// "Facilitador PMO" del formulario (ej. "Jose Lopez") — es la excepción a
+// "solo el dueño edita": si el Facilitador PMO de un folio coincide con el
+// de este usuario, también puede editarlo aunque no lo haya creado él.
+var USUARIOS_HEADERS    = ['username','password','nombre','rol','fraccionamiento','facilitador_pmo'];
 var BITACORA_SHEET_NAME = 'BITACORA';
 var BITACORA_HEADERS    = ['Fecha', 'Usuario', 'Accion', 'ID_Registro', 'Detalle'];
 
 // Contraseñas semilla ya en hash SHA-256 (admin123 / vidusa2024), no en texto plano.
 // Solo se usan si la hoja USUARIOS se crea desde cero (spreadsheet nuevo).
 var DEFAULT_USERS = [
-  ['admin',       '240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9', 'Administrador',    'Admin',  ''],
-  ['jose_agustin','7c613aebe5601b09fe4b806a62d4c765cd0850f166694921f1e3807cebc949b0', 'José Agustín',     'Editor', ''],
-  ['ramiro',      '7c613aebe5601b09fe4b806a62d4c765cd0850f166694921f1e3807cebc949b0', 'Ramiro Fernández', 'Viewer', ''],
+  ['admin',       '240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9', 'Administrador',    'Admin',  '', ''],
+  ['jose_agustin','7c613aebe5601b09fe4b806a62d4c765cd0850f166694921f1e3807cebc949b0', 'José Agustín',     'Editor', '', ''],
+  ['ramiro',      '7c613aebe5601b09fe4b806a62d4c765cd0850f166694921f1e3807cebc949b0', 'Ramiro Fernández', 'Viewer', '', ''],
 ];
 
 var HEADERS = [
@@ -170,6 +174,21 @@ function registrarBitacora(usuario, accion, idRegistro, detalle) {
   }
 }
 
+// Excepción a "solo el dueño edita": busca el Facilitador PMO asignado a
+// un usuario, leído fresco de USUARIOS (no del token, que puede tener
+// hasta 3h de antigüedad) — evita que un cambio de asignación tarde en
+// aplicarse o que alguien conserve un permiso viejo con un token vencido.
+function obtenerFacilitadorPmoDeUsuario(username) {
+  var usheet = getUsuariosSheet();
+  var ulr = usheet.getLastRow();
+  if (ulr < 2) return '';
+  var urows = usheet.getRange(2, 1, ulr - 1, USUARIOS_HEADERS.length).getValues();
+  for (var i = 0; i < urows.length; i++) {
+    if (String(urows[i][0]).trim() === username) return String(urows[i][5] || '').trim();
+  }
+  return '';
+}
+
 function getSheet() {
   var ss    = SpreadsheetApp.getActiveSpreadsheet();
   var sheet = ss.getSheetByName(SHEET_NAME);
@@ -300,11 +319,12 @@ function doPost(e) {
           return jsonOut({
             status: 'ok',
             user: {
-              username: String(urow[0]).trim(),
-              fullname: String(urow[2]),
-              role:     role,
-              fracc:    String(urow[4]),
-              token:    generarToken(String(urow[0]).trim(), role)
+              username:       String(urow[0]).trim(),
+              fullname:       String(urow[2]),
+              role:           role,
+              fracc:          String(urow[4]),
+              facilitadorPmo: String(urow[5] || '').trim(),
+              token:          generarToken(String(urow[0]).trim(), role)
             }
           });
         }
@@ -406,11 +426,17 @@ function doPost(e) {
       // guardado (p.ej. otro usuario lo capturó después de que este cliente cargó el registro),
       // se conserva el valor existente en vez de borrarlo con una cadena vacía.
       var currentRow = sheet.getRange(rowNum, 1, 1, HEADERS.length).getValues()[0];
-      // Solo el dueño (Creado_Por) o un Admin pueden editar — igual que en el
-      // frontend, un folio sin dueño ya no es editable por cualquiera.
+      // Solo el dueño (Creado_Por), el Admin, o el Facilitador PMO asignado
+      // al folio pueden editar — esta última es la excepción: muchos
+      // registros los captura un compañero por el Facilitador, así que el
+      // Facilitador real también debe poder editarlo aunque no lo haya
+      // creado él.
       var duenoPut = String(currentRow[HEADERS.indexOf('Creado_Por')] || '');
-      if (sesionCrud.role !== 'Admin' && duenoPut !== sesionCrud.username) {
-        return jsonOut({ status: 'error', message: 'Solo el dueño del folio o un Admin puede editarlo' });
+      var facilitadorRegistro = String(currentRow[HEADERS.indexOf('Facilitador_BPO')] || '').trim();
+      var miFacilitadorPmo = obtenerFacilitadorPmoDeUsuario(sesionCrud.username);
+      var esFacilitadorAsignado = miFacilitadorPmo !== '' && miFacilitadorPmo === facilitadorRegistro;
+      if (sesionCrud.role !== 'Admin' && duenoPut !== sesionCrud.username && !esFacilitadorAsignado) {
+        return jsonOut({ status: 'error', message: 'Solo el dueño del folio, el Facilitador asignado, o un Admin puede editarlo' });
       }
       var updRow = HEADERS.map(function(h, i) {
         var incoming = body[h];
