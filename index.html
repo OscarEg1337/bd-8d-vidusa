@@ -1624,12 +1624,24 @@ function saveRec() {
   data.Votacion_D4_JSON=document.getElementById('f-Votacion_D4_JSON').value;
   if(EDIT_ID){
     const idx=DB.findIndex(r=>r.ID_Registro===EDIT_ID);
+    const prev = idx>=0 ? {...DB[idx]} : null;
     if(idx>=0) DB[idx]={...DB[idx],...data};
-    apiPost({_method:'PUT',...data});
-    toast('Registro actualizado');
     saveCache(DB);
     closeModal('rec-modal');
     refreshDash();
+    // No se confirma "actualizado" hasta que el servidor responda ok —
+    // antes se avisaba de inmediato y, si el PUT fallaba en silencio
+    // (sesión vencida, sin permiso, red caída), el cambio se veía
+    // guardado en pantalla pero nunca llegaba al servidor: al refrescar
+    // o volver a entrar el folio aparecía como si nada hubiera pasado.
+    apiPost({_method:'PUT',...data}).then(res=>{
+      if(res && res.status==='ok'){
+        toast('Registro actualizado');
+      } else {
+        if(prev && idx>=0){ DB[idx]=prev; saveCache(DB); refreshDash(); }
+        if(!res) toast('No se pudo conectar con el servidor. Intenta de nuevo.', 'er');
+      }
+    });
   } else {
     const tempId=data.ID_Registro;
     // El ID_Registro que se ve aquí es un folio "adivinado" por el
