@@ -74,6 +74,20 @@ function getTokenSecret() {
   return secret;
 }
 
+// La columna "rol" de Usuarios se ha llenado a mano con distinta
+// capitalización ("Admin", "ADMIN", "admin") y las comparaciones de rol en
+// el resto del código son sensibles a mayúsculas — un Admin con "ADMIN" en
+// la hoja terminaba sin permisos de Admin. Se normaliza aquí, una sola vez,
+// al iniciar sesión, para que el token siempre lleve el valor canónico.
+function normalizarRol(rolCrudo) {
+  var r = String(rolCrudo || '').trim();
+  var rLower = r.toLowerCase();
+  if (rLower === 'admin') return 'Admin';
+  if (rLower === 'editor') return 'Editor';
+  if (rLower === 'viewer') return 'Viewer';
+  return r;
+}
+
 function generarToken(username, role) {
   var expiry = Date.now() + TOKEN_TTL_MS;
   var payload = username + '|' + role + '|' + expiry;
@@ -315,7 +329,7 @@ function doPost(e) {
         var match = (stored === upass) || (stored === sha256Hex(upass));
         if (match) {
           limpiarLoginFallido(uname);
-          var role = String(urow[3]);
+          var role = normalizarRol(urow[3]);
           return jsonOut({
             status: 'ok',
             user: {
