@@ -109,6 +109,9 @@ a:hover{color:var(--accent)}
 .fgroup input::placeholder{color:var(--muted)}
 .fgroup textarea{resize:vertical;min-height:76px}
 .fgroup select option{background:#fff;color:var(--text)}
+.ms-box{width:100%;max-height:170px;overflow-y:auto;background:#fff;border:1px solid var(--border2);border-radius:var(--r-sm);padding:6px 14px;box-sizing:border-box}
+.ms-item{display:flex;align-items:center;gap:8px;padding:5px 0;font-size:13px;color:var(--text);cursor:pointer}
+.ms-item input{width:auto;flex:none}
 
 .err-msg{color:var(--err-tx);font-size:12px;margin-top:10px;display:none;padding:10px 13px;background:var(--err-bg);border-radius:var(--r-sm);border:1px solid rgba(185,28,28,0.2);animation:shake 0.4s cubic-bezier(0.36,0.07,0.19,0.97)}
 @keyframes shake{10%,90%{transform:translateX(-2px)}20%,80%{transform:translateX(3px)}30%,70%{transform:translateX(-3px)}40%,60%{transform:translateX(3px)}50%{transform:translateX(-3px)}}
@@ -657,15 +660,23 @@ th.f3{min-width:160px;width:160px}
             </select>
           </div>
           <div class="fgroup"><label>Residente</label><input id="f-Residente" /></div>
-          <div class="fgroup"><label>Facilitador PMO</label>
-            <select id="f-Facilitador_BPO">
-              <option value="">-- Seleccionar --</option>
-              <option>Aldo Rodriguez</option><option>Carlos Ramirez</option><option>Carlos Torres</option>
-              <option>Cesar de la Rosa</option><option>Erik Calderon</option><option>Felipe Carrillo</option>
-              <option>Joel Rodriguez</option><option>Jose Juan Eggermont</option><option>Jose Lopez</option>
-              <option>Julio Esquivel</option><option>Natalia Escalera</option><option>Rosalba Pecina</option>
-              <option>Yolanda Rangel</option>
-            </select>
+          <div class="fgroup"><label>Facilitador PMO (puede seleccionar más de uno)</label>
+            <div class="ms-box" id="ms-Facilitador_BPO" onchange="updateFacilitadores()">
+              <label class="ms-item"><input type="checkbox" value="Aldo Rodriguez">Aldo Rodriguez</label>
+              <label class="ms-item"><input type="checkbox" value="Carlos Ramirez">Carlos Ramirez</label>
+              <label class="ms-item"><input type="checkbox" value="Carlos Torres">Carlos Torres</label>
+              <label class="ms-item"><input type="checkbox" value="Cesar de la Rosa">Cesar de la Rosa</label>
+              <label class="ms-item"><input type="checkbox" value="Erik Calderon">Erik Calderon</label>
+              <label class="ms-item"><input type="checkbox" value="Felipe Carrillo">Felipe Carrillo</label>
+              <label class="ms-item"><input type="checkbox" value="Joel Rodriguez">Joel Rodriguez</label>
+              <label class="ms-item"><input type="checkbox" value="Jose Juan Eggermont">Jose Juan Eggermont</label>
+              <label class="ms-item"><input type="checkbox" value="Jose Lopez">Jose Lopez</label>
+              <label class="ms-item"><input type="checkbox" value="Julio Esquivel">Julio Esquivel</label>
+              <label class="ms-item"><input type="checkbox" value="Natalia Escalera">Natalia Escalera</label>
+              <label class="ms-item"><input type="checkbox" value="Rosalba Pecina">Rosalba Pecina</label>
+              <label class="ms-item"><input type="checkbox" value="Yolanda Rangel">Yolanda Rangel</label>
+            </div>
+            <input type="hidden" id="f-Facilitador_BPO" />
           </div>
           <div class="fw" style="font-size:11px;font-weight:700;text-transform:uppercase;color:#28534E;border-bottom:1px solid #98C894;padding-bottom:4px;margin:8px 0;letter-spacing:.6px">Equipo de Trabajo — Miembros</div>
           <div class="fgroup"><label>Miembro 1</label><input id="et-m1" placeholder="Nombre completo" oninput="updateEquipo()" /></div>
@@ -1282,7 +1293,7 @@ function refreshDash() {
   if (fracc) FILT = FILT.filter(r=>r.Fraccionamiento===fracc);
   if (est) FILT = FILT.filter(r=>r.Estatus_Folio_D8===est||r.Estatus_Folio_D6===est);
   if (sup) FILT = FILT.filter(r=>r.Superintendente===sup);
-  if (facil) FILT = FILT.filter(r=>r.Facilitador_BPO===facil);
+  if (facil) FILT = FILT.filter(r=>String(r.Facilitador_BPO||'').split(',').map(s=>s.trim()).includes(facil));
   PAGE = 1;
   renderTable();
   updateKPIs();
@@ -1310,7 +1321,15 @@ function populateDashFilters() {
   };
   fill('dg-fracc', 'Fraccionamiento');
   fill('dg-super', 'Superintendente');
-  fill('dg-facilitador', 'Facilitador_BPO');
+  // Facilitador_BPO puede traer varios nombres separados por coma —
+  // el filtro debe listar cada nombre individual, no la cadena completa.
+  const selF = document.getElementById('dg-facilitador');
+  if (selF) {
+    const curF = selF.value;
+    const valsF = [...new Set(DB.flatMap(r=>String(r.Facilitador_BPO||'').split(',').map(s=>s.trim()).filter(Boolean)))].sort((a,b)=>a.localeCompare(b,'es'));
+    selF.innerHTML = '<option value="">Todos</option>' + valsF.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join('');
+    if (valsF.includes(curF)) selF.value = curF;
+  }
 }
 
 function renderTable() {
@@ -1333,7 +1352,8 @@ function buildRow(r) {
   // Excepción: el Facilitador PMO asignado al folio también puede
   // editarlo aunque no lo haya creado él — muchos folios los captura un
   // compañero por el Facilitador real.
-  const esFacilitadorAsignado = !!CU.facilitadorPmo && String(r.Facilitador_BPO||'').trim() === String(CU.facilitadorPmo||'').trim();
+  const facilitadoresFolio = String(r.Facilitador_BPO||'').split(',').map(s=>s.trim());
+  const esFacilitadorAsignado = !!CU.facilitadorPmo && facilitadoresFolio.includes(String(CU.facilitadorPmo||'').trim());
   // Solo el dueño (Creado_Por), el Facilitador asignado, o un Admin pueden
   // editar/borrar un folio. Los huérfanos sin dueño (folios viejos
   // migrados) los tiene que reclamar un Admin desde "Creado Por".
@@ -1547,6 +1567,18 @@ function switchTab(i) {
 // ═══════════════════════════════════════════════
 // RECORD FORM
 // ═══════════════════════════════════════════════
+// Facilitador PMO acepta varios nombres (checkboxes) — se guardan como una
+// sola cadena separada por comas en el campo oculto f-Facilitador_BPO.
+function updateFacilitadores(){
+  const sel=[...document.querySelectorAll('#ms-Facilitador_BPO input:checked')].map(c=>c.value);
+  document.getElementById('f-Facilitador_BPO').value=sel.join(', ');
+}
+function setFacilitadores(val){
+  const list=String(val||'').split(',').map(s=>s.trim()).filter(Boolean);
+  document.querySelectorAll('#ms-Facilitador_BPO input').forEach(c=>{c.checked=list.includes(c.value);});
+  updateFacilitadores();
+}
+
 function openNewRec() {
   if((CU.role||'').toLowerCase()==='viewer')return;
   EDIT_ID=null;
@@ -1561,6 +1593,7 @@ function openNewRec() {
   document.getElementById('f-Votacion_D4_JSON').value='';
   TOGGLE_KEYS.forEach(k=>setSatBtns(k,''));
   for(let i=1;i<=10;i++){const el=document.getElementById('et-m'+i);if(el)el.value='';}
+  setFacilitadores('');
   resetVotoTable(); updateEquipo();
   switchTab(0);
   openModal('rec-modal');
@@ -1578,6 +1611,7 @@ function openEditRec(id) {
   TOGGLE_KEYS.forEach(k=>setSatBtns(k,r[k]||''));
   const mems=(r.Equipo_Trabajo||'').split(',').map(s=>s.trim());
   for(let i=1;i<=10;i++){const el=document.getElementById('et-m'+i);if(el)el.value=mems[i-1]||'';}
+  setFacilitadores(r.Facilitador_BPO);
   restoreVotoTable(r.Votacion_D4_JSON); updateEquipo();
   switchTab(0);
   openModal('rec-modal');

@@ -432,9 +432,12 @@ function doPost(e) {
       // Facilitador real también debe poder editarlo aunque no lo haya
       // creado él.
       var duenoPut = String(currentRow[HEADERS.indexOf('Creado_Por')] || '');
-      var facilitadorRegistro = String(currentRow[HEADERS.indexOf('Facilitador_BPO')] || '').trim();
+      // Facilitador_BPO puede traer varios nombres separados por coma (un
+      // folio puede tener más de un Facilitador PMO asignado).
+      var facilitadoresRegistro = String(currentRow[HEADERS.indexOf('Facilitador_BPO')] || '')
+        .split(',').map(function(s) { return s.trim(); }).filter(Boolean);
       var miFacilitadorPmo = obtenerFacilitadorPmoDeUsuario(sesionCrud.username);
-      var esFacilitadorAsignado = miFacilitadorPmo !== '' && miFacilitadorPmo === facilitadorRegistro;
+      var esFacilitadorAsignado = miFacilitadorPmo !== '' && facilitadoresRegistro.indexOf(miFacilitadorPmo) !== -1;
       if (sesionCrud.role !== 'Admin' && duenoPut !== sesionCrud.username && !esFacilitadorAsignado) {
         return jsonOut({ status: 'error', message: 'Solo el dueño del folio, el Facilitador asignado, o un Admin puede editarlo' });
       }
